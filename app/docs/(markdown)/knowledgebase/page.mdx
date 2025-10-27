@@ -1,0 +1,95 @@
+export const metadata = {
+  title: "BioContextAI Knowledgebase Tools | Documentation",
+  description:
+    "Access biomedical databases and tools through BioContextAI Knowledgebase MCP. Query STRING, PanglaoDB, Human Protein Atlas, Reactome, and more via the Model Context Protocol.",
+  keywords: [
+    "biomedical tools",
+    "MCP tools",
+    "STRING database",
+    "PanglaoDB",
+    "Human Protein Atlas",
+    "Reactome",
+    "biomedical API",
+  ],
+  openGraph: {
+    title: "BioContextAI Knowledgebase Tools | Documentation",
+    description: "Biomedical databases and analysis tools accessible via MCP",
+    type: "article",
+  },
+}
+
+# BioContextAI Tools and Resources
+
+BioContextAI provides access to biomedical data and analysis capabilities through the Model Context Protocol (MCP). The available tools and resources depend on the current configuration of the BioContextAI Knowledgebase MCP and the broader registry of community-contributed servers.
+
+## What tools are available?
+
+BioContextAI Knowledgebase MCP exposes tools for querying biomedical knowledge bases and performing domain-specific tasks. The exact set of tools may change as new resources are integrated. To see the current list of tools and their descriptions, use your MCP-compatible client&apos;s tool discovery features, or consult the [BioContextAI Registry](/registry/biocontext-ai/knowledgebase-mcp).
+
+**Typical capabilities include:**
+
+- Querying protein-protein interaction databases (e.g., STRING)
+- Accessing cell type marker information (e.g., PanglaoDB)
+- Retrieving protein expression data (e.g., Human Protein Atlas)
+- Exploring biological pathways (e.g., Reactome)
+- Searching for biomedical research funding opportunities
+
+## How to use BioContextAI tools
+
+1. **Connect your MCP-compatible client** (see installation guides for IDEs or chatbots)
+2. **Discover available tools**: Most clients will show a list of available tools after connecting to the server. Tool names and descriptions are provided by the server itself.
+3. **Formulate your query**: Ask questions relevant to the connected databases or resources. For best results, be specific and reference the database or resource if needed.
+
+**Example queries:**
+
+- "What proteins interact with TP53?"
+- "Summarize markers for liver cell types according to PanglaoDB with a minimum specificity of 0.1. List them by cell type as a table."
+- "Find recent NIH grants related to kidney research."
+
+## Best Practices
+
+- **Be specific**: Reference the database or resource if you want to target a particular tool.
+- **Check tool documentation**: Use the tool descriptions provided by the server or see the [BioContextAI Knowledgebase MCP repository](https://github.com/biocontext-ai/knowledgebase-mcp).
+- **Break down complex tasks**: For multi-step analyses, consider breaking your query into simpler steps.
+
+## Data Sources and Licensing
+
+| Data Source                        | License                         | URL                                                              | Notes                                                               |
+| ---------------------------------- | ------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| AlphaFold (EMBL-EBI)               | CC BY 4.0                       | https://alphafold.ebi.ac.uk/                                     |                                                                     |
+| Antibody Registry (RRIDs)          | CC0 (metadata: CC-NC)           | https://www.antibodyregistry.org/faq                             | Commercial reuse restrictions on some metadata                      |
+| bioRxiv/medRxiv                    | CC BY 4.0                       | https://www.biorxiv.org/about/FAQ                                | Preprint content licenses vary                                      |
+| ClinicalTrials.gov API             | Terms of Service                | https://clinicaltrials.gov/about-site/terms-conditions           | Attribution required                                                |
+| Ensembl                            | No restrictions\*               | https://www.ensembl.org/info/about/legal/disclaimer.html         | \*Some third-party data may have restrictions                       |
+| EuropePMC                          | Various/Copyright protected     | https://europepmc.org/Copyright                                  | Individual article licenses vary                                    |
+| Google Scholar                     | Terms of Service                | https://scholar.google.com/intl/en/scholar/terms.html            | Rate limiting; use responsibly                                      |
+| Grants.gov API                     | Terms of Service                | https://www.grants.gov/api/terms-conditions                      | Attribution required                                                |
+| Human Protein Atlas                | CC BY-SA 4.0                    | https://www.proteinatlas.org/about/licence                       |                                                                     |
+| InterPro                           | CC0 1.0 Universal               | https://www.ebi.ac.uk/interpro/                                  | Includes InterPro, Pfam, PRINTS, and SFLD data                      |
+| KEGG                               | Proprietary (Free academic use) | https://www.kegg.jp/kegg/legal.html                              | Commercial services/remote hosting not permitted                    |
+| Ontology Lookup Service (EMBL-EBI) | Generally CC0/CC BY             | https://www.ebi.ac.uk/licencing/                                 | Refer to EMBL-EBI general licensing                                 |
+| Open Targets                       | CC0 1.0                         | https://platform-docs.opentargets.org/licence                    |                                                                     |
+| OpenFDA                            | CC0 1.0 Universal\*             | https://open.fda.gov/license/                                    | \*Some data may have restrictions                                   |
+| PanglaoDB                          | Public data                     | https://panglaodb.se/about.html                                  | All data are public                                                 |
+| PRIDE                              | CC0/CC BY 4.0\*                 | https://www.ebi.ac.uk/pride/markdownpage/license                 | \*CC0 for datasets from June 2018+, CC BY 4.0 for derived resources |
+| Reactome                           | CC0                             | https://reactome.org/license                                     |                                                                     |
+| STRING                             | CC BY 4.0                       | https://string-db.org/cgi/access?footer_active_subpage=licensing |                                                                     |
+| UniProt                            | CC BY 4.0                       | https://www.uniprot.org/help/license                             |                                                                     |
+
+### Disclaimer
+
+**Users are solely responsible for ensuring compliance with all applicable license terms and conditions when accessing data through this MCP server.** The licenses and terms listed above are subject to change, and additional citation requirements may apply for specific datasets or publications. Before using any data for commercial purposes, redistribution, or publication, please review the current license terms directly from each data source. Some data sources may have additional restrictions not fully captured in this summary.
+
+For KEGG data specifically, please note that while certain academic use cases are permitted, providing commercial services or remote hosting using KEGG data is not allowed under their proprietary license terms.
+
+For Google Scholar, please be aware that while the data is accessible, it is subject to rate limiting and should be used responsibly to avoid service disruption. Please refer to the Google Scholar Terms of Service for more details. Repeated automated queries may result in temporary or permanent bans from the service and your IP address may be blocked if it exceeds the allowed query limits.
+
+## Limitations
+
+- The set of available tools depends on the current server configuration and may change over time.
+- Data freshness and coverage depend on the underlying databases.
+- Some servers may have rate limits or require local deployment for high-throughput use.
+
+## Learn more
+
+- [BioContextAI Knowledgebase MCP](https://github.com/biocontext-ai/knowledgebase-mcp)

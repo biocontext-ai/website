@@ -1,0 +1,80 @@
+import CodeBlock from "@/components/code-block"
+
+export const metadata = {
+  title: "Add BioContextAI to Chatbots | Documentation",
+  description:
+    "Integrate BioContextAI Knowledgebase MCP with Claude Desktop and other chatbots. Enable AI assistants to access biomedical databases and research tools via MCP configuration.",
+  keywords: [
+    "Claude Desktop setup",
+    "MCP chatbot integration",
+    "biomedical chatbot",
+    "Claude MCP configuration",
+    "AI assistant setup",
+    "chatbot biomedical tools",
+  ],
+  openGraph: {
+    title: "Add BioContextAI to Chatbots | Documentation",
+    description: "Connect biomedical tools to Claude Desktop and other MCP-compatible chatbots",
+    type: "article",
+  },
+}
+
+# Add BioContextAI to your Chatbot
+
+BioContextAI can be used with chatbots that support the Model Context Protocol (MCP), such as Claude Desktop. This enables chatbots to access biomedical data and analysis tools provided by BioContextAI.
+
+## General Steps
+
+1. **Install an MCP-compatible chatbot** (e.g., Claude Desktop)
+2. **Add the BioContextAI Knowledgebase MCP**:
+
+- Using the following URL: `https://mcp.biocontext.ai/mcp/`
+- Or using our Python package: `biocontext-kb` (**recommended**)
+
+3. **Configure the server** in your chatbot&apos;s MCP settings (usually under "MCP" or "Tool Servers").
+4. **Restart the chatbot** if required.
+5. **Test the integration** by asking a biomedical question.
+
+### Example: Claude Desktop
+
+1. Download and install [Claude Desktop](https://claude.ai/download)
+2. Open settings and select "Developer" -> "Edit Config"
+3. Add a new server to your `claude_desktop_config.json`:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "biocontext_kb": {
+      "command": "uvx",
+      "args": ["biocontext_kb"]
+    }
+  }
+}`}
+/>
+
+4. Save the file and restart Claude Desktop
+5. Try a biomedical query, such as:
+   - "What proteins interact with STAT3?"
+   - "Which Reactome pathways contain MKI67?"
+
+If you encounter any errors, try restarting Claude Desktop or updating it to the latest version. Uninstalling and reinstalling `mcp-remote` might also help. If you still encounter issues after that, please open an issue in the [BioContextAI Knowledgebase MCP GitHub repository](https://github.com/biocontext-ai/knowledgebase-mcp).
+
+#### Claude Pro/Max
+
+If you have a Claude Pro or Max subscription, you can simply navigate to `Settings > Profile`, click on `Integrations` and then `Add more`. There, you can paste in `https://mcp.biocontext.ai/mcp/` and then click `Add`.
+**Note:** Currently, this integration is broken because of specialized authentication requirements. We are working on a fix. Please use the `biocontext-kb` Python package as described above for now.
+
+## Using BioContextAI Knowledgebase MCP
+
+- Ask questions relevant to biomedical research, referencing specific databases or resources if needed.
+- For best results, be specific and describe all necessary steps.
+- Performing one step at a time may improve results, e.g., asking for the id in a database first before asking for a query to that database.
+- The set of available tools depends on the current server configuration. Use your chatbot&apos;s tool discovery features to see what&apos;s available.
+
+## Troubleshooting
+
+- **Tools not showing**: Ensure the server is enabled and restart the chatbot.
+- **Connection errors**: Verify the URL and your internet connection.
+- **Authorization**: BioContextAI is free to use and does not require an API key.
+- **Rate limits**: For high-throughput use, consider [deploying your own instance](https://github.com/biocontext-ai/knowledgebase-mcp).

@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "knowledgebase-mcp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "biocontext_kb@latest"
+      ]
+    }
+  }
+}

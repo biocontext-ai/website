@@ -1,0 +1,55 @@
+"@context": https://schema.org
+"@type": SoftwareApplication
+"@id": https://github.com/johndoe/example-mcp-server
+
+additionalType:
+  - https://schema.org/ScholarlyArticle
+  - https://schema.org/SoftwareSourceCode
+
+identifier: johndoe/example-mcp-server
+
+name: Example MCP Server
+
+description: >
+  This server integrates multiple biological databases and provides a unified interface
+  for researchers to access and analyze their complex biological data.
+
+codeRepository: https://github.com/johndoe/example-mcp-server
+
+url: https://github.com/johndoe/example-mcp-server/README.md
+
+maintainer:
+  - "@type": Person
+    name: John Doe
+    identifier: johndoe
+    url: https://github.com/johndoe
+  - "@type": Organization
+    name: Example Research Institute
+    url: https://example.org
+
+license: MIT
+
+applicationCategory: HealthApplication
+
+keywords:
+  - bioinformatics
+  - genomics
+  - proteomics
+  - pathway analysis
+  - machine learning
+
+datePublished: "2024-01-15"
+
+operatingSystem:
+  - Linux
+  - macOS
+  - Windows
+
+programmingLanguage:
+  - Python
+  - TypeScript
+
+featureList:
+  - Genomic sequence analysis
+  - Protein structure prediction
+  - Pathway enrichment analysis

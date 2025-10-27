@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --sidebar-background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --foreground: 210 40% 84%;
+    --card: 222.2 84% 7.9%;
+    --card-foreground: 210 40% 84%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 84%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 84%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 84%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 84%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    @apply overflow-x-hidden;
+    @apply overflow-y-scroll;
+    scrollbar-gutter: stable;
+  }
+
+  :root, body, .overflow-y-scroll {
+    scrollbar-color: hsl(var(--primary)) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/* MDX/Prose Styles */
+.prose {
+  @apply text-foreground;
+}
+
+.prose h1 {
+  @apply mb-6 mt-0 text-3xl font-bold tracking-tight text-foreground;
+}
+
+.prose h2 {
+  @apply mb-4 mt-8 border-b border-border pb-2 text-2xl font-semibold tracking-tight text-foreground;
+}
+
+.prose h3:not(.accordion-header) {
+  @apply mb-3 mt-6 text-xl font-semibold tracking-tight text-foreground;
+}
+
+.prose h4 {
+  @apply mb-2 mt-4 text-lg font-semibold tracking-tight text-foreground;
+}
+
+.prose p {
+  @apply mb-4 leading-7 text-foreground;
+}
+
+.prose-primary-foreground p {
+  @apply text-primary-foreground;
+}
+
+.prose p:last-child {
+  @apply mb-0;
+}
+
+.prose a {
+  @apply text-blue-600 underline underline-offset-4 transition-colors hover:text-blue-800;
+}
+
+.prose strong {
+  @apply font-semibold text-foreground;
+}
+
+.prose ul {
+  @apply mb-4 list-disc space-y-2;
+}
+
+.prose ol {
+  @apply mb-4 list-decimal space-y-2;
+}
+
+.prose li {
+  @apply ms-8 leading-7 text-foreground;
+}
+
+li {
+  &::marker {
+    @apply text-primary;
+  }
+}
+
+.prose blockquote {
+  @apply my-6 border-l-4 border-border bg-muted/50 py-2 pl-4 italic text-muted-foreground;
+}
+
+.prose pre {
+  @apply mb-4 max-w-full min-w-0;
+}
+
+
+
+.prose pre:not(:has(.code-block)):not(.code-block *) {
+  @apply overflow-x-auto rounded-lg bg-muted p-4 text-sm max-w-full;
+}
+
+.prose code:not(.code-block code):not(.code-block *) {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm break-words;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0 whitespace-pre;
+}
+
+.code-block code, .code-block pre {
+  @apply bg-slate-950 ;
+}
+
+.prose hr {
+  @apply my-8 border-border;
+}
+
+.prose table {
+  @apply mb-4 w-full border-collapse border border-border;
+}
+
+.prose th,
+.prose td {
+  @apply border border-border px-3 py-2 text-left;
+}
+
+.prose th {
+  @apply bg-muted font-semibold;
+}
+
+.prose img {
+  @apply inline align-middle;
+}
+
+.dark .prose a {
+  @apply text-blue-400 hover:text-blue-300;
+}
+
+.octicon-alert {
+  display: none !important;
+}
+
+.docs code, .docs pre {
+  @apply max-w-full min-w-0;
+  @apply overflow-x-auto;
+}
+
+.json-view div, .json-view span {
+  @apply !text-foreground;
+}

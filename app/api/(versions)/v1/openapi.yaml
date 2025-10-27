@@ -1,0 +1,545 @@
+openapi: 3.1.0
+info:
+  title: Biocontext MCP Registry API
+  description: |
+    Public API for accessing the Model Context Protocol (MCP) server registry.
+    
+    This API provides read-only access to:
+    - Browse all MCP servers in the registry
+    - Get detailed information about specific MCP servers
+    
+    All endpoints return data in a standardized format with success/error indicators and metadata.
+  version: 1.0.0
+  contact:
+    name: Biocontext AI
+    url: https://github.com/biocontext-ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://biocontext.ai/api/v1
+    description: Production server
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+tags:
+  - name: Registry
+    description: MCP server registry endpoints
+
+paths:
+  /registry:
+    get:
+      tags:
+        - Registry
+      summary: List all MCP servers
+      description: |
+        Returns a list of all MCP servers from the registry with basic information and review summaries.
+        This is a public read-only endpoint.
+      operationId: getAllServers
+      responses:
+        '200':
+          description: Successfully retrieved list of MCP servers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerListResponse'
+              example:
+                success: true
+                data:
+                  - "@context": "https://schema.org"
+                    "@type": "SoftwareApplication"
+                    "@id": "https://biocontext.ai/registry/owner/repo"
+                    identifier: "owner/repo"
+                    name: "Example MCP Server"
+                    description: "An example MCP server"
+                    keywords: ["mcp", "example"]
+                    license: "MIT"
+                    programmingLanguage: ["TypeScript"]
+                    codeRepository: "https://github.com/owner/repo"
+                    aggregateRating:
+                      helpfulCount: 5
+                      unhelpfulCount: 1
+                      totalReviews: 6
+                      netVotes: 4
+                    githubStars: 123
+                meta:
+                  version: "v1"
+                  total: 1
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Failed to fetch MCP servers"
+                meta:
+                  version: "v1"
+
+  /registry/{identifier}:
+    get:
+      tags:
+        - Registry
+      summary: Get MCP server details
+      description: |
+        Returns detailed information about a specific MCP server including:
+        - Basic server information
+        - All approved reviews with author details
+        - GitHub README content
+        - GitHub stars count
+        - Tools information
+
+        This is a public read-only endpoint.
+      operationId: getServerById
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: The unique identifier of the MCP server (e.g., "owner/repo")
+          schema:
+            type: string
+            pattern: '^[^/]+/[^/]+$'
+          example: "owner/repo"
+      responses:
+        '200':
+          description: Successfully retrieved MCP server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerDetailResponse'
+              example:
+                success: true
+                data:
+                  server:
+                    "@context": "https://schema.org"
+                    "@type": "SoftwareApplication"
+                    "@id": "https://biocontext.ai/registry/owner/repo"
+                    identifier: "owner/repo"
+                    name: "Example MCP Server"
+                    description: "An example MCP server"
+                    keywords: ["mcp", "example"]
+                    license: "MIT"
+                    programmingLanguage: ["TypeScript"]
+                    codeRepository: "https://github.com/owner/repo"
+                  serverId: "cm123abc"
+                  reviews:
+                    - id: "review123"
+                      name: "Great server!"
+                      reviewBody: "This server works perfectly for my use case."
+                      isHelpful: true
+                      datePublished: "2024-01-15T10:00:00.000Z"
+                      author:
+                        id: "user123"
+                        name: "John Doe"
+                        image: "https://example.com/avatar.jpg"
+                  aggregateRating:
+                    helpfulCount: 5
+                    unhelpfulCount: 1
+                    totalReviews: 6
+                    netVotes: 4
+                  githubStars: 123
+                  githubReadme:
+                    content: "# Example MCP Server\n\nThis is an example..."
+                    encoding: "base64"
+                  mcpTools:
+                    - name: "example_tool"
+                      description: "An example tool"
+                meta:
+                  version: "v1"
+        '400':
+          description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Server identifier is required"
+                meta:
+                  version: "v1"
+        '404':
+          description: MCP server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "MCP server not found"
+                meta:
+                  version: "v1"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ServerListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPServerWithReviewSummary'
+        meta:
+          type: object
+          required:
+            - version
+          properties:
+            version:
+              type: string
+              example: "v1"
+            total:
+              type: integer
+              description: Total number of servers in the response
+              example: 42
+
+    ServerDetailResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MCPServerDetail'
+        meta:
+          type: object
+          required:
+            - version
+          properties:
+            version:
+              type: string
+              example: "v1"
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - meta
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Failed to fetch MCP servers"
+        meta:
+          type: object
+          required:
+            - version
+          properties:
+            version:
+              type: string
+              example: "v1"
+
+    MCPServerWithReviewSummary:
+      allOf:
+        - $ref: '#/components/schemas/MCPServer'
+        - type: object
+          required:
+            - aggregateRating
+          properties:
+            aggregateRating:
+              $ref: '#/components/schemas/AggregateRating'
+            githubStars:
+              type: integer
+              description: Number of GitHub stars
+              example: 123
+
+    MCPServerDetail:
+      type: object
+      required:
+        - server
+        - serverId
+        - reviews
+        - aggregateRating
+      properties:
+        server:
+          $ref: '#/components/schemas/MCPServer'
+        serverId:
+          type: string
+          description: Internal server ID
+          example: "cm123abc"
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        aggregateRating:
+          $ref: '#/components/schemas/AggregateRating'
+        githubStars:
+          type: integer
+          description: Number of GitHub stars
+          example: 123
+        githubReadme:
+          $ref: '#/components/schemas/GithubReadme'
+        mcpTools:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPTool'
+
+    MCPServer:
+      type: object
+      description: MCP Server following schema.org SoftwareApplication vocabulary
+      required:
+        - name
+        - description
+      properties:
+        "@context":
+          type: string
+          example: "https://schema.org"
+        "@type":
+          type: string
+          example: "SoftwareApplication"
+        "@id":
+          type: string
+          format: uri
+          example: "https://biocontext.ai/registry/owner/repo"
+        additionalType:
+          type: array
+          items:
+            type: string
+          example: ["https://schema.org/SoftwareSourceCode"]
+        identifier:
+          type: string
+          description: Unique identifier in format "owner/repo"
+          example: "owner/repo"
+        name:
+          type: string
+          description: Name of the MCP server
+          example: "Example MCP Server"
+        description:
+          type: string
+          description: Description of what the server does
+          example: "An example MCP server that demonstrates the protocol"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Keywords for searchability
+          example: ["mcp", "example", "demo"]
+        license:
+          type: string
+          description: Software license
+          example: "MIT"
+        programmingLanguage:
+          type: array
+          items:
+            type: string
+          description: Programming languages used
+          example: ["TypeScript", "JavaScript"]
+        codeRepository:
+          type: string
+          format: uri
+          description: URL to the source code repository
+          example: "https://github.com/owner/repo"
+        url:
+          type: string
+          format: uri
+          description: Project homepage URL
+          example: "https://example.com"
+        softwareHelp:
+          type: object
+          description: Documentation information
+          properties:
+            "@type":
+              type: string
+              example: "CreativeWork"
+            url:
+              type: string
+              format: uri
+              example: "https://docs.example.com"
+            name:
+              type: string
+              example: "Documentation"
+        maintainer:
+          type: array
+          items:
+            type: object
+            properties:
+              "@type":
+                type: string
+                example: "Person"
+              name:
+                type: string
+                example: "John Doe"
+              identifier:
+                type: string
+                example: "johndoe"
+              url:
+                type: string
+                format: uri
+                example: "https://github.com/johndoe"
+        datePublished:
+          type: string
+          format: date
+          description: Publication date in YYYY-MM-DD format
+          example: "2024-01-15"
+        applicationCategory:
+          type: string
+          description: Category of the application
+          example: "DeveloperTools"
+        operatingSystem:
+          type: array
+          items:
+            type: string
+          description: Supported operating systems
+          example: ["Cross-platform", "Linux", "macOS", "Windows"]
+        featureList:
+          type: array
+          items:
+            type: string
+          description: List of features
+          example: ["Feature 1", "Feature 2"]
+        installationConfig:
+          type: object
+          description: Installation configuration details
+          additionalProperties: true
+
+    AggregateRating:
+      type: object
+      description: Aggregate rating calculated from all reviews
+      required:
+        - helpfulCount
+        - unhelpfulCount
+        - totalReviews
+        - netVotes
+      properties:
+        helpfulCount:
+          type: integer
+          description: Count of positive (thumbs up) reviews
+          example: 5
+        unhelpfulCount:
+          type: integer
+          description: Count of negative (thumbs down) reviews
+          example: 1
+        totalReviews:
+          type: integer
+          description: Total number of reviews
+          example: 6
+        netVotes:
+          type: integer
+          description: Net votes (helpfulCount - unhelpfulCount), minimum 0
+          example: 4
+
+    Review:
+      type: object
+      description: A user review of an MCP server
+      required:
+        - id
+        - name
+        - reviewBody
+        - isHelpful
+        - datePublished
+        - author
+      properties:
+        id:
+          type: string
+          description: Unique review identifier
+          example: "review123"
+        name:
+          type: string
+          description: Review title
+          example: "Great server!"
+        reviewBody:
+          type: string
+          description: Full review text
+          example: "This server works perfectly for my use case. Highly recommended!"
+        isHelpful:
+          type: boolean
+          description: Whether this is a positive (true) or negative (false) review
+          example: true
+        datePublished:
+          type: string
+          format: date-time
+          description: When the review was published
+          example: "2024-01-15T10:00:00.000Z"
+        author:
+          $ref: '#/components/schemas/Author'
+
+    Author:
+      type: object
+      description: Review author information
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: User ID
+          example: "user123"
+        name:
+          type: string
+          description: User's display name
+          example: "John Doe"
+        image:
+          type: string
+          format: uri
+          description: User's avatar URL
+          example: "https://example.com/avatar.jpg"
+
+    GithubReadme:
+      type: object
+      description: GitHub README information
+      properties:
+        content:
+          type: string
+          description: README content (may be base64 encoded)
+          example: "IyBFeGFtcGxlIE1DUCBTZXJ2ZXI="
+        encoding:
+          type: string
+          description: Content encoding
+          example: "base64"
+        sha:
+          type: string
+          description: Git SHA hash of the README
+          example: "abc123def456"
+        lastChecked:
+          type: string
+          format: date-time
+          description: When the README was last fetched
+          example: "2024-01-15T10:00:00.000Z"
+
+    MCPTool:
+      type: object
+      description: A tool provided by the MCP server
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          description: Tool ID
+          example: "tool123"
+        name:
+          type: string
+          description: Tool name
+          example: "example_tool"
+        description:
+          type: string
+          description: Tool description
+          example: "An example tool that does something useful"
+        inputSchema:
+          type: object
+          description: JSON Schema for tool input parameters
+          additionalProperties: true
+
+  securitySchemes: {}
+
+security: []

@@ -1,0 +1,148 @@
+import CodeBlock from "@/components/code-block"
+
+export const metadata = {
+  title: "MCP Server Template | BioContextAI Registry",
+  description:
+    "Start building biomedical MCP servers with our cookiecutter template. Includes best practices, development setup, and deployment guides for registry-compatible servers.",
+  keywords: [
+    "MCP server template",
+    "cookiecutter MCP",
+    "MCP development",
+    "server template",
+    "biomedical MCP development",
+    "MCP server creation",
+  ],
+  openGraph: {
+    title: "MCP Server Template | BioContextAI Registry",
+    description: "Quick-start template for developing biomedical MCP servers",
+    type: "article",
+  },
+}
+
+# MCP Server Template
+
+## Getting Started
+
+For development of custom MCP servers that are compatible with the BioContextAI registry, we provide an easy-to-use template for developers. The template is available at [https://github.com/biocontext-ai/mcp-server-cookiecutter](https://github.com/biocontext-ai/mcp-server-cookiecutter).
+
+### Using the Template
+
+Use this template with `cookiecutter` by running:
+
+<CodeBlock language="bash" value="uvx cookiecutter https://github.com/biocontext-ai/mcp-server-cookiecutter.git" />
+
+Alternatively, you can install `cookiecutter` with pip:
+
+<CodeBlock
+  language="bash"
+  value={`python3 -m pip install --user cookiecutter
+cookiecutter https://github.com/biocontext-ai/mcp-server-cookiecutter.git`}
+/>
+
+After running `cookiecutter`, you will be asked to provide the package name, project name and description, as well as author name and email. This information will be included in the generated package as metadata.
+
+## Development Setup
+
+After generating your package from the template, you can set up your development environment using either traditional virtual environments or uv:
+
+### Using uv (recommended)
+
+<CodeBlock language="bash" value={`# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies and run your server
+
+cd your-package-directory
+uv sync`} />
+
+### Using traditional virtual environment
+
+<CodeBlock
+  language="bash"
+  value={`python3 -m venv venv
+source venv/bin/activate
+pip install -e .`}
+/>
+
+## Running Your MCP Server
+
+Once your package is set up, you can run your MCP server in several ways:
+
+### Using uvx (simplest)
+
+<CodeBlock language="bash" value="uvx your_package_name" />
+
+### Using installed package
+
+<CodeBlock
+  language="bash"
+  value={`# After installing with pip or uv
+your_package_name --transport stdio
+# or for HTTP transport
+your_package_name --transport http --port 3000`}
+/>
+
+### Client Configuration
+
+To include your MCP server in clients that support the `mcp.json` standard:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "your-server-name": {
+      "command": "uvx",
+      "args": ["your_package_name"],
+      "env": {
+        "UV_PYTHON": "3.12"
+      }
+    }
+  }
+}`}
+/>
+
+## Publishing Your Package
+
+We recommend publishing your MCP server through PyPI so that it can be installed through `uv` and `pip`. The template includes a `release.yaml` GitHub Action that automates this process:
+
+1. **Set up PyPI trusted publishing**: Add your GitHub repository as a trusted publisher in your PyPI account
+2. **Create a release**: Create a release on your GitHub repository
+3. **Automatic publishing**: The included GitHub Action will automatically publish to PyPI
+
+Once published, users can install your server with:
+
+<CodeBlock language="bash" value={`# Using uvx (install and run)
+uvx your_package_name
+
+# Using uv (add to existing setup)
+
+uv add your_package_name
+
+# Using pip
+
+pip install your_package_name`} />
+
+## Testing
+
+The template includes a basic testing setup. Run tests with:
+
+<CodeBlock language="bash" value={`uv run pytest`} />
+
+## Documentation
+
+The template includes configuration for building documentation with Read the Docs. For detailed setup instructions, see the generated README in your project.
+
+## Submit to BioContextAI Registry
+
+To make your MCP server discoverable to the community, please consider submitting it to the BioContextAI Registry:
+
+1. **Create metadata**: Use our online editor at [https://biocontext.ai/registry/editor](https://biocontext.ai/registry/editor) to create the required metadata file
+2. **Open a pull request**: Submit your metadata file to the Registry repository
+3. **Review process**: We will review your submission and include it in the Registry
+4. **Community announcement**: Approved servers are announced on social media
+
+## Community
+
+Join our community within the **scverse®** Zulip to connect with users, developers, and present your work.
+
+For more detailed information about the template features and advanced configuration, please refer to the README in the generated project repository.

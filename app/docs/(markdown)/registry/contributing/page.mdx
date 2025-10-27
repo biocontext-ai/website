@@ -1,0 +1,244 @@
+import Image from "next/image"
+import { SubmissionInstructions } from "@/components/registry/submission-instructions"
+import CodeBlock from "@/components/code-block"
+
+export const metadata = {
+  title: "Contributing to the Registry | BioContextAI",
+  description:
+    "Submit your biomedical MCP server to the BioContextAI Registry. Learn about requirements, metadata creation, submission process, and best practices for registry contributions.",
+  keywords: [
+    "registry contribution",
+    "submit MCP server",
+    "meta.yaml creation",
+    "MCP submission",
+    "registry requirements",
+    "open source submission",
+  ],
+  openGraph: {
+    title: "Contributing to the Registry | BioContextAI",
+    description: "Guide to submitting biomedical MCP servers to the community registry",
+    type: "article",
+  },
+}
+
+# Contributing to the Registry
+
+You can contribute your Model Context Protocol (MCP) server to the BioContextAI Registry to make it discoverable by the biomedical research community.
+
+## Requirements
+
+- **Biomedical focus**: Your server must provide tools relevant to biomedical research or clinical use. General purpose tools that may also have biomedical applications are considered out-of-scope.
+- **Free academic access**: Services must be free for academic research.
+- **Open source**: Your server must use an OSI-approved open-source license.
+- **MCP compliance**: Your server must communicate through the Model Context Protocol. See the [MCP specification](https://modelcontextprotocol.io/specification/2025-03-26/index). To enable flexible remote hosting, we highly encourage using the Streamable HTTP transport layer.
+- **Documentation**: Provide clear documentation for installation and usage.
+- **Public repository**: Source code and documentation must be publicly accessible.
+
+## Submission Process
+
+1. **Prepare your repository**: Include a README, license, working MCP server, and documentation.
+2. **Create metadata**: Create a `meta.yaml` file describing your server, following the [schema](/schema.json). To facilitate this process and ensure compliant metadata, we have created [an interactive online editor](/registry/editor/) to create `meta.yaml` files.
+3. **Optional: Create installation configuration**: You can also generate an `mcp.json` file using our [interactive editor](/registry/editor/) to provide standardized installation instructions for MCP clients. This file will be made available through the BioContextAI registry once your submission is accepted.
+4. **Submit a pull request**: Fork the [registry repository](https://github.com/biocontext-ai/registry), add your `meta.yaml` (and optionally `mcp.json`) to the `servers` directory, and open a pull request.
+5. **Review**: Automated checks and reviewers will verify your submission. You may be asked for changes.
+6. **Publishing**: Once approved, your server will be included in the Registry after a short while. Related data, such as the README, number of GitHub stars and tool metadata (for remote-hosted servers only) will be automatically added.
+
+## Graphical Overview
+
+The following diagram illustrates the contribution process to the BioContextAI Registry:
+
+<div className="flex justify-center">
+  <Image
+    src="/assets/BioContextRegistry.svg"
+    alt="BioContextAI Registry Contribution Process"
+    className="block h-auto max-w-sm rounded-lg border border-accent bg-white p-4"
+    width={720}
+    height={720}
+    style={{ backgroundColor: "white" }}
+  />
+</div>
+
+## MCP JSON Configuration Format
+
+The `mcp.json` file provides standardized installation instructions for MCP-compatible clients. This format is an emergent standard widely adopted across the MCP ecosystem, including Claude Desktop, Cursor, VS Code, and other applications that support the Model Context Protocol.
+
+### Configuration Structure
+
+The standard uses an `mcpServers` object where each key represents a server name and the value contains the server's configuration:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "your-server-name": {
+      "command": "npx",
+      "args": ["-y", "@your-org/your-mcp-server"],
+      "env": {
+        "API_KEY": "<YOUR_API_KEY>"
+      }
+    }
+  }
+}`}
+/>
+
+### Configuration Fields
+
+#### `command` (required)
+
+The executable command to run your MCP server. Common values include:
+
+- `npx` for Node.js packages
+- `uvx` for Python packages
+- `python` or `python3` for direct Python execution
+- Absolute paths to executables
+
+<CodeBlock
+  language="json"
+  value={`{
+  "command": "npx"
+}`}
+/>
+
+#### `args` (required)
+
+An array of command-line arguments passed to the server executable. Arguments are passed in order and may include:
+
+- Package installation flags (e.g., `-y` for npx to auto-confirm)
+- Package names with versions
+- Server-specific arguments and parameters
+- Configuration file paths
+
+<CodeBlock
+  language="json"
+  value={`{
+  "args": ["-y", "@modelcontextprotocol/server-example", "--config", "config.json"]
+}`}
+/>
+
+#### `env` (optional)
+
+An object containing environment variables required by your server. Common uses include:
+
+- API keys and authentication tokens
+- Database connection strings
+- Feature flags and configuration options
+- Service endpoints
+
+All values must be strings. Use placeholder values (e.g., `<YOUR_API_KEY>`) for sensitive information that users need to provide.
+
+<CodeBlock
+  language="json"
+  value={`{
+  "env": {
+    "API_KEY": "<YOUR_API_KEY>",
+    "DATABASE_URL": "<YOUR_DATABASE_URL>",
+    "DEBUG": "false"
+  }
+}`}
+/>
+
+### Complete Example
+
+Here's a complete example for a biomedical research server:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "pubmed-search": {
+      "command": "uvx",
+      "args": ["fake-example-mcp-server-pubmed"],
+      "env": {
+        "NCBI_API_KEY": "<YOUR_NCBI_API_KEY>",
+        "MAX_RESULTS": "100"
+      }
+    }
+  }
+}`}
+/>
+
+### Client Adoption
+
+This format is supported by major MCP clients:
+
+- **Claude Desktop**: `~/.claude/claude_desktop_config.json`
+- **Cursor**: `~/.cursor/mcp.json`
+- **VS Code**: Workspace `.vscode/mcp.json`
+- **Other MCP-compatible applications**: Follow this standard
+
+When you submit your server to the BioContextAI Registry with an `mcp.json` file, users will be able to download this configuration directly from the registry and easily integrate your server into their MCP clients.
+
+### Security Considerations
+
+When creating your `mcp.json`:
+
+- Use placeholder values for sensitive information (API keys, tokens, passwords)
+- Document all required environment variables in your README
+- Specify minimum required permissions or access levels
+- Provide clear instructions for obtaining necessary credentials
+
+## Best Practices
+
+- Use typed tools, standard libraries and provide examples
+- Provide clear instructions and name your functions unambiguously to make it easy to use for LLMs
+- High-level MCP libraries such as `FastMCP` can ensure that your implementation correctly uses the MCP standard and may facilitate long-term maintenance
+- Make setup and deployment as simple as possible
+- Include tests and container images if possible
+- Commit to regular maintenance
+- Provide an `mcp.json` configuration file to simplify installation for end users
+
+## Step-by-Step Submission with GitHub CLI
+
+For a streamlined contribution process, you can use the GitHub CLI (`gh`) to submit your MCP server to the registry. This method simplifies forking, committing, and creating pull requests.
+
+### Prerequisites
+
+Before you begin, ensure you have the following tools installed:
+
+1. **GitHub CLI (`gh`)**: [Installation instructions](https://cli.github.com/)
+2. **uv** (for Python-based servers): [Installation instructions](https://docs.astral.sh/uv/getting-started/installation/)
+
+### Submission Steps
+
+<SubmissionInstructions
+  serverName="your-server-name"
+  identifier="your-username/your-repo"
+  description="Brief description of what your server does"
+  hasMcpJson={false}
+  repositoryUrl=""
+  documentationUrl=""
+  licenseUrl=""
+  hasRemoteUrl={false}
+  showAsAlert={false}
+/>
+
+### Additional Tips
+
+After creating your pull request:
+
+- **Monitor your PR**: Use `gh pr view` to check the status, and `gh pr checks` to view automated test results
+- **Respond to feedback**: If reviewers request changes, update your files and push to the same branch:
+  ```bash
+  git add servers/your-server-name/
+  git commit -m "Address review feedback"
+  git push origin add-your-server-name
+  ```
+  Your pull request will automatically update.
+
+### Tips for a Successful Submission
+
+- **Test your metadata**: Use the [interactive editor](/registry/editor/) to validate your `meta.yaml` and `mcp.json` files before submitting.
+- **Check automated tests**: After creating your PR, ensure all automated checks pass. You can view check results with `gh pr checks`.
+- **Be responsive**: Respond promptly to reviewer feedback to speed up the approval process.
+- **Follow conventions**: Look at existing submissions in the `servers` directory for examples of proper formatting and structure.
+
+## Guidelines
+
+The BioContextAI community, including the Registry, is subject to our [governance](/docs/community/governance) and the [Contributor Covenant Code of Conduct](https://github.com/biocontext-ai/registry/blob/main/.github/CODE_OF_CONDUCT.md).
+
+## Learn more
+
+- [BioContextAI Registry repository](https://github.com/biocontext-ai/registry)
+- [Model Context Protocol documentation](https://modelcontextprotocol.io/introduction)
+- [GitHub CLI documentation](https://cli.github.com/manual/)
+- [uv documentation](https://docs.astral.sh/uv/)

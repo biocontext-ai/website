@@ -1,0 +1,102 @@
+export const metadata = {
+  title: "Introduction to BioContextAI | Documentation",
+  description:
+    "Learn about BioContextAI - the community-driven registry of biomedical MCP servers connecting AI with research resources. Discover how to use FAIR4RS-compliant tools for medical research.",
+  keywords: [
+    "BioContextAI introduction",
+    "biomedical MCP servers",
+    "FAIR4RS principles",
+    "Model Context Protocol",
+    "AI biomedical research",
+    "MCP registry",
+    "research software",
+  ],
+  openGraph: {
+    title: "Introduction to BioContextAI | Documentation",
+    description: "Community-driven registry connecting AI with biomedical research resources",
+    type: "article",
+  },
+}
+
+# BioContextAI Introduction
+
+Learn all about **BioContextAI in less than 5 minutes**.
+
+## What is BioContextAI?
+
+BioContextAI is a community effort to connect agentic artificial intelligence with biomedical resources using the Model Context Protocol (MCP). Its main aim is to encourage the development of MCP servers for medical research applications that follow the FAIR4RS principles (Findable, Accessible, Interoperable, Reusable for Research Software).
+
+> If AI applications are the Operating System and MCP servers are the applications, then BioContextAI aims to be the App Store that ensures biomedical researchers can find and use the right qualitative tools for their needs.
+
+BioContextAI is a community-driven project that thrives off active participation and contributions. It is not a company or a commercial product, but rather a collaborative effort to improve biomedical research workflows through AI and standardized protocols.
+
+While our main focus is on indexing biomedical MCP servers, we also provide a core set of biomedical resources that can be used by any MCP-compatible AI assistant or IDE.
+
+To better understand what BioContextAI is and what it is not, please refer to this table:
+
+| Description                                               | BioContextAI? |
+| --------------------------------------------------------- | ------------- |
+| Biomedical MCP server registry                            | ✅            |
+| Community resources for building biomedical MCP servers   | ✅            |
+| Proof-of-concept MCP servers providing base functionality | ✅            |
+| Proof-of-concept chatbot for trying out MCP servers       | ✅            |
+| Community-driven open-source project                      | ✅            |
+| Instance of an agentic system                             | ❌            |
+| Instance of a large-language model (LLM)                  | ❌            |
+| Commercial product                                        | ❌            |
+| Knowledge graph                                           | ❌            |
+
+## Terminology
+
+The following terms are used throughout the BioContextAI documentation:
+
+- **BioContextAI**: The community project that provides a registry of biomedical MCP servers and a core set of biomedical resources.
+- **BioContextAI Registry**: The directory of biomedical MCP servers that can be used with any MCP-compatible client: [https://biocontext.ai/registry](/registry)
+- **BioContextAI Knowledgebase MCP**: A proof-of-concept MCP server that provides a basic set of biomedical resources and tools. It is available at: [https://biocontext.ai/mcp](/mcp)
+- **BioContextAI Chat**: A proof-of-concept chatbot that allows users to interact with the BioContextAI Knowledgebase MCP and its resources. It is available at: [https://biocontext.ai/chat](/chat)
+
+## Getting Started
+
+If you are a developer, you may wish to contribute your own biomedical MCP server to the BioContextAI Registry. You can find more information on how to do this in the [Contributing to the Registry](/docs/registry/contributing) section. If you are a researcher or developer looking to use the BioContextAI resources, you can start by exploring the [BioContextAI Registry](/registry) to find available MCP servers and tools.
+
+### Using the proof-of-concept BioContextAI Knowledgebase MCP
+
+The BioContextAI Knowledgebase MCP is a proof-of-concept MCP server that provides a basic set of biomedical resources and tools. It is designed to be used with any MCP-compatible client, such as VS Code, Cursor, or Claude Desktop. It provides access to a variety of biomedical resources, including:
+
+- **STRING**: Protein-protein interaction networks
+- **PanglaoDb**: Single-cell RNA sequencing reference marker database
+- **Human Protein Atlas**: Proteomics information resource
+- **Antibody Registry**: Antibody information and resources
+- **EuropePMC**: Literature search and retrieval
+- **Reactome**: Pathways
+- **Open Targets**: Target - disease associations
+- **Grants.gov**: Biomedical funding opportunities
+
+**IMPORTANT:** The BioContextAI Knowledgebase MCP is a proof-of-concept and is not intended for production use. It is provided as a community resource to demonstrate the capabilities of MCP servers and to encourage the development of more advanced biomedical MCP servers. You can find different MCP servers in the [BioContextAI Registry](/registry).
+
+#### BioContextAI Chat
+
+The easiest way to experience the functionality that MCP servers can provide is to use BioContextAI Chat. It allows you to interact with the BioContextAI Knowledgebase MCP and its resources without any setup. Please note that access is provided with a less capable model than you would typically use with your own MCP-compatible client and that the server is rate-limited to ensure fair usage for all users.
+You can access BioContextAI Chat at: [https://biocontext.ai/chat](/chat)
+
+#### Other MCP-compatible clients
+
+If you prefer to use your own MCP-compatible client, you can connect to the BioContextAI Knowledgebase MCP using the following URL:
+
+```
+https://mcp.biocontext.ai/mcp/
+```
+
+The remote BioContextAI Knowledgebase MCP is available at through the streamable HTTP transport (usage limits apply).
+
+You will need:
+
+- An MCP-compatible client (VS Code, Cursor, Claude Desktop, etc.)
+- Basic knowledge of your client's MCP configuration
+- No API key is required for the hosted BioContextAI Knowledgebase MCP
+
+Follow these steps to get started:
+
+1. Configure your MCP client to connect to the BioContextAI Knowledgebase MCP
+2. Ask your AI assistant biomedical questions or tasks
+3. The assistant will use BioContext's tools to retrieve accurate information

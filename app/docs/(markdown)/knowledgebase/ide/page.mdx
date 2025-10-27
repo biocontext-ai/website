@@ -1,0 +1,160 @@
+import CodeBlock from "@/components/code-block"
+
+export const metadata = {
+  title: "Add BioContextAI to IDEs and Code Assistants | Documentation",
+  description:
+    "Integrate BioContextAI with VS Code, Cursor, and WindSurf. Access biomedical tools directly in your IDE using Model Context Protocol stdio and HTTP transports.",
+  keywords: [
+    "VS Code MCP",
+    "Cursor IDE integration",
+    "WindSurf setup",
+    "IDE biomedical tools",
+    "MCP stdio transport",
+    "code assistant MCP",
+    "GitHub Copilot MCP",
+  ],
+  openGraph: {
+    title: "Add BioContextAI to IDEs and Code Assistants | Documentation",
+    description: "Connect biomedical research tools to your development environment",
+    type: "article",
+  },
+}
+
+# Add BioContextAI to your Code Assistant
+
+BioContextAI can be integrated with code assistants and IDEs that support the Model Context Protocol (MCP), such as VS Code, Cursor, and WindSurf. This enables you to access biomedical tools directly from your development environment.
+
+## What is MCP?
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) is an open protocol that standardizes how applications provide context and tools to LLMs. MCP acts as a plugin system, allowing you to extend your code assistant's capabilities by connecting it to various data sources and tools through standardized interfaces.
+
+MCP servers can be written in any language that can print to `stdout` or serve an HTTP endpoint. This flexibility allows you to implement MCP servers using your preferred programming language and technology stack.
+
+## Supported Transports in BioContextAI Knowledgebase MCP
+
+BioContextAI Knowledgebase MCP supports:
+
+- **stdio**: For local installations, the server communicates via standard input/output (stdio).
+- **Streamable HTTP**: For remote or local network access, the server exposes a streamable HTTP endpoint (e.g., `https://mcp.biocontext.ai/mcp/`). Streamable HTTP is the new MCP standard for over-network access, replacing the older HTTP+SSE transport as of protocol version 2024-11-05. In this transport, the server provides a single HTTP endpoint that supports both POST and GET requests. Streaming and server-to-client notifications are supported, and servers may optionally use SSE for streaming, but this is not required. See the [MCP Transports documentation](https://modelcontextprotocol.io/docs/concepts/transports.md) for details.
+
+> Note: BioContextAI Knowledgebase MCP does not support WebSocket or other transport types.
+
+> **Important:** As of May 2025, some clients (such as Cursor and Windsurf) may not yet fully support the new Streamable HTTP transport. Support is expected to be added soon. Please check the documentation for your code assistant for the latest compatibility information.
+
+## General Steps
+
+1. **Install an MCP-compatible client or extension** for your code assistant. For example, [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) in VS Code, or the MCP extension in Cursor or WindSurf.
+2. **Add the BioContextAI Knowledgebase MCP** using the following URL:
+   - `https://mcp.biocontext.ai/mcp/`
+3. **Configure the server** in your code assistant&apos;s MCP settings. This usually involves adding a server entry with the type `http` (for streamable HTTP) or specifying a command for local servers (stdio).
+4. **Restart your code assistant** if required.
+5. **Verify the integration** by checking for available tools or running a test query.
+
+**Note:** On macOS, you should install the [uvx](https://docs.astral.sh/uv/getting-started/installation/#homebrew) command-line tool via Homebrew when using local hosting, else it may not be available in your PATH.
+
+### Example: VS Code
+
+1. Install GitHub Copilot and ensure MCP support is enabled.
+2. Open settings and search for "Copilot MCP".
+3. Edit your `.vscode/mcp.json`:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "servers": {
+    "biocontext": {
+      "type": "http",
+      "url": "https://mcp.biocontext.ai/mcp/"
+    }
+  }
+}`}
+/>
+
+or:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "servers": {
+    "biocontext_kb": {
+      "command": "uvx",
+      "args": ["biocontext_kb"]
+    }
+  }
+}`}
+/>
+
+4. Save and restart VS Code.
+5. Open the Copilot Chat panel and try a biomedical query.
+
+### Example: Cursor
+
+Cursor supports stdio and HTTP-based transports for MCP servers. For streamable HTTP, use:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "biocontext": {
+      "url": "https://mcp.biocontext.ai/mcp/"
+    }
+  }
+}`}
+/>
+
+- **Local (stdio) server**:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "biocontext_kb": {
+      "command": "uvx",
+      "args": ["biocontext_kb"]
+    }
+  }
+}`}
+/>
+
+You can place this configuration in your project directory (`.cursor/mcp.json`) or globally in your home directory (`~/.cursor/mcp.json`).
+
+> If you encounter issues connecting to a streamable HTTP server, check the Cursor documentation for updates on support for this transport.
+
+### Example: WindSurf
+
+Windsurf (Cascade) natively integrates with MCP, allowing you to add MCP servers as plugins. You can add BioContextAI Knowledgebase MCP or other MCP servers as follows:
+
+1. Open the Plugin Store from the Cascade panel (Plugins icon in the top right) or go to Windsurf Settings > Cascade > Plugins.
+2. Search for the desired MCP plugin (official plugins have a blue checkmark) and click Install. If not listed, you can add it manually:
+   - Edit the raw `~/.codeium/windsurf/mcp_config.json` file.
+   - Add an entry for BioContextAI Knowledgebase MCP:
+
+<CodeBlock
+  language="json"
+  value={`{
+  "mcpServers": {
+    "biocontext": {
+      "url": "https://mcp.biocontext.ai/mcp/"
+    }
+  }
+}`}
+/>
+
+3. For local servers, use the `command` and `args` fields as in other MCP clients.
+4. After adding a new MCP plugin, press the refresh button in Cascade to load the new tools.
+5. You can manage which tools are enabled for each plugin from the Tools tab or via Manage plugins in Windsurf Settings.
+
+> Windsurf supports both `stdio` and HTTP-based transports. For remote servers, use the streamable HTTP endpoint as shown above. If you encounter issues, check Windsurf documentation for updates on streamable HTTP support.
+
+For more details, see the [official MCP docs](https://modelcontextprotocol.io/) and [Windsurf documentation](https://codeium.com/windsurf).
+
+## Troubleshooting
+
+- **Connection errors**: Check your internet connection and the server URL.
+- **No tools appearing**: Some clients require a restart after adding new servers.
+- **Query not working**: Ensure your question is within the scope of BioContextAI&apos;s capabilities. See the [BioContextAI documentation](https://biocontext.ai) for details.
+
+## More information
+
+- [Model Context Protocol: Client Quickstart](https://modelcontextprotocol.io/quickstart/client)
+- [BioContextAI documentation](https://biocontext.ai)

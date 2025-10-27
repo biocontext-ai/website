@@ -1,0 +1,635 @@
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String?
+  email           String          @unique
+  emailVerified   DateTime?
+  image           String?
+  role            UserRole        @default(USER)
+  status          UserStatus      @default(ACTIVE)
+  accounts        Account[]
+  sessions        Session[]
+  // Optional for WebAuthn support
+  Authenticator   Authenticator[]
+  // Reviews authored by this user
+  reviews         Review[]
+  // Reviews approved by this user (admin only)
+  approvedReviews Review[]        @relation("ReviewApprovals")
+  // Collections owned by this user
+  collections     Collection[]
+  // Blog posts authored by this user
+  blogPosts       BlogPost[]
+  // Chat rate limiting
+  chatRateLimit   ChatRateLimit?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Chat Rate Limiting model (legacy - will be migrated to RateLimit)
+model ChatRateLimit {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  requestCount    Int      @default(0)
+  windowStartTime DateTime @default(now())
+  lastRequestTime DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([windowStartTime])
+}
+
+// Generic Rate Limiting model for all resources
+model RateLimit {
+  id              String   @id @default(cuid())
+  userId          String? // Null for IP-based limiting
+  ipAddress       String? // For unauthenticated users
+  resourceType    String // e.g., "reviews", "collections", "reports", "chat"
+  requestCount    Int      @default(0)
+  windowStartTime DateTime @default(now())
+  lastRequestTime DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite unique constraint: one rate limit per user+resource or ip+resource
+  @@unique([userId, resourceType])
+  @@unique([ipAddress, resourceType])
+  @@index([userId, resourceType])
+  @@index([ipAddress, resourceType])
+  @@index([windowStartTime])
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+// MCP Server Registry Models
+model McpServer {
+  id                  String              @id @default(cuid())
+  context             String              @default("https://schema.org")
+  type                String              @default("SoftwareApplication")
+  uri                 String              @unique // @id field from JSON schema (URI format)
+  identifier          String              @unique // owner/repository format with pattern validation
+  name                String              @db.VarChar(100)
+  description         String              @db.VarChar(1000)
+  codeRepository      String // Must match GitHub/GitLab/etc pattern
+  softwareHelpUrl     String? // URL to documentation/help
+  softwareHelpName    String? // Name/title of the documentation
+  url                 String? // URL to install the application
+  datePublished       DateTime?
+  applicationCategory ApplicationCategory @default(HealthApplication)
+  license             String              @default("Unknown")
+  installationConfig  Json? // MCP installation configuration from mcp.json
+
+  // Relations
+  additionalTypes      McpServerAdditionalType[]
+  maintainers          McpServerMaintainer[]
+  keywords             McpServerKeyword[]
+  operatingSystems     McpServerOperatingSystem[]
+  programmingLanguages McpServerProgrammingLanguage[]
+  features             McpServerFeature[]
+  reports              McpServerReport[]
+  reviews              Review[]
+  githubStars          GitHubStars?
+  githubReadme         GitHubReadme?
+  mcpTools             McpServerTool[]
+  collectionItems      CollectionItem[]
+
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  ChatMessageToolCalls ChatMessageToolCalls[]
+
+  // Add indexes for performance
+  @@index([identifier])
+  @@index([name])
+  @@index([applicationCategory])
+  @@index([datePublished])
+}
+
+model McpServerReport {
+  id          String    @id @default(cuid())
+  mcpServerId String
+  mcpServer   McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  reason      String
+  explanation String
+  isReviews   Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model McpServerAdditionalType {
+  id          String         @id @default(cuid())
+  mcpServerId String
+  type        AdditionalType
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, type])
+}
+
+model McpServerMaintainer {
+  id          String         @id @default(cuid())
+  mcpServerId String
+  type        MaintainerType
+  name        String         @db.VarChar(255)
+  identifier  String? // GitHub username, ORCID, etc.
+  url         String? // GitHub profile or ORCID profile
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  // Add index for lookups
+  @@index([mcpServerId])
+}
+
+model McpServerKeyword {
+  id          String @id @default(cuid())
+  mcpServerId String
+  keyword     String @db.VarChar(30) // Max 30 chars per JSON schema
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, keyword])
+  @@index([keyword]) // For keyword searches
+}
+
+model McpServerOperatingSystem {
+  id              String          @id @default(cuid())
+  mcpServerId     String
+  operatingSystem OperatingSystem
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, operatingSystem])
+}
+
+model McpServerProgrammingLanguage {
+  id                  String              @id @default(cuid())
+  mcpServerId         String
+  programmingLanguage ProgrammingLanguage
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, programmingLanguage])
+}
+
+model McpServerFeature {
+  id          String @id @default(cuid())
+  mcpServerId String
+  feature     String
+
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, feature])
+}
+
+// GitHub Stars tracking for MCP servers
+model GitHubStars {
+  id          String   @id @default(cuid())
+  mcpServerId String
+  starCount   Int      @default(0)
+  lastChecked DateTime @default(now())
+
+  // Relations
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([mcpServerId]) // Only one star record per server
+  // Add indexes for performance
+  @@index([mcpServerId])
+  @@index([lastChecked])
+}
+
+// GitHub README content for MCP servers
+model GitHubReadme {
+  id          String   @id @default(cuid())
+  mcpServerId String
+  content     String   @db.Text // Store README content
+  encoding    String   @default("base64") // GitHub API returns base64 encoded content
+  sha         String? // SHA hash of the content for change detection
+  size        Int? // Size of the content in bytes
+  lastChecked DateTime @default(now())
+
+  // Relations
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([mcpServerId]) // Only one README record per server
+  // Add indexes for performance
+  @@index([mcpServerId])
+  @@index([lastChecked])
+}
+
+// MCP Server Tools tracking
+model McpServerTool {
+  id           String   @id @default(cuid())
+  mcpServerId  String
+  name         String   @db.VarChar(255) // Tool name
+  description  String?  @db.Text // Tool description
+  inputSchema  String?  @db.Text // JSON schema for tool inputs
+  outputSchema String?  @db.Text // JSON schema for tool outputs
+  lastChecked  DateTime @default(now())
+
+  // Relations
+  mcpServer McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Add indexes for performance
+  @@index([mcpServerId])
+  @@index([name])
+  @@index([lastChecked])
+}
+
+// Collection Models
+model Collection {
+  id          String   @id @default(cuid())
+  slug        String   @unique // Generated from name for URL-friendly access
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  keywords    String[] // Array of keywords for searchability
+  isPublic    Boolean  @default(false)
+  isDefault   Boolean  @default(false) // Each user has one default collection
+
+  // Relations
+  owner   User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  items   CollectionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([ownerId])
+  @@index([slug])
+  @@index([isPublic])
+  @@index([name])
+}
+
+model CollectionItem {
+  id           String @id @default(cuid())
+  collectionId String
+  mcpServerId  String
+
+  // Optional metadata for the item in this collection
+  notes   String?  @db.Text
+  addedAt DateTime @default(now())
+
+  // Relations
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  mcpServer  McpServer  @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate items in same collection
+  @@unique([collectionId, mcpServerId])
+  @@index([collectionId])
+  @@index([mcpServerId])
+  @@index([addedAt])
+}
+
+model ChatMessage {
+  id                String                 @id @default(cuid())
+  userId            String?
+  modelName         String?
+  inputTokens       Int                    @default(0)
+  totalTokens       Int                    @default(0)
+  reasoningTokens   Int                    @default(0)
+  cachedInputTokens Int                    @default(0)
+  toolsCalls        ChatMessageToolCalls[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatMessageToolCalls {
+  id            String  @id @default(cuid())
+  chatMessageId String
+  mcpServerId   String?
+  toolName      String
+
+  mcpServer   McpServer?  @relation(fields: [mcpServerId], references: [id], onDelete: SetNull)
+  chatMessage ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chatMessageId])
+}
+
+// Application Category enum
+enum ApplicationCategory {
+  HealthApplication
+  EducationApplication
+  ReferenceApplication
+  DeveloperApplication
+  UtilitiesApplication
+}
+
+// Additional Type enum
+enum AdditionalType {
+  ScholarlyArticle   @map("https://schema.org/ScholarlyArticle")
+  SoftwareSourceCode @map("https://schema.org/SoftwareSourceCode")
+}
+
+// Maintainer Type enum
+enum MaintainerType {
+  Person
+  Organization
+}
+
+// Operating System enum
+enum OperatingSystem {
+  Windows
+  macOS
+  Linux
+  Unix
+  CrossPlatform @map("Cross-platform")
+}
+
+// Programming Language enum
+enum ProgrammingLanguage {
+  Python
+  TypeScript
+  JavaScript
+  R
+  Julia
+  Java
+  Go
+  Rust
+  CSharp     @map("C#")
+  CPlusPlus  @map("C++")
+  Other
+}
+
+// Enhanced enum with all SPDX license identifiers from JSON schema
+enum LicenseIdentifier {
+  UNKNOWN                         @map("UNKNOWN")
+  ZERO_BSD                        @map("0BSD")
+  AAL                             @map("AAL")
+  AFL_1_1                         @map("AFL-1.1")
+  AFL_1_2                         @map("AFL-1.2")
+  AFL_2_0                         @map("AFL-2.0")
+  AFL_2_1                         @map("AFL-2.1")
+  AFL_3_0                         @map("AFL-3.0")
+  AGPL_3_0_ONLY                   @map("AGPL-3.0-only")
+  AGPL_3_0_OR_LATER               @map("AGPL-3.0-or-later")
+  APACHE_1_1                      @map("Apache-1.1")
+  APACHE_2_0                      @map("Apache-2.0")
+  APL_1_0                         @map("APL-1.0")
+  APSL_1_0                        @map("APSL-1.0")
+  APSL_1_1                        @map("APSL-1.1")
+  APSL_1_2                        @map("APSL-1.2")
+  APSL_2_0                        @map("APSL-2.0")
+  ARTISTIC_1_0                    @map("Artistic-1.0")
+  ARTISTIC_1_0_CL8                @map("Artistic-1.0-cl8")
+  ARTISTIC_1_0_PERL               @map("Artistic-1.0-Perl")
+  ARTISTIC_2_0                    @map("Artistic-2.0")
+  BSD_1_CLAUSE                    @map("BSD-1-Clause")
+  BSD_2_CLAUSE                    @map("BSD-2-Clause")
+  BSD_2_CLAUSE_PATENT             @map("BSD-2-Clause-Patent")
+  BSD_3_CLAUSE                    @map("BSD-3-Clause")
+  BSD_3_CLAUSE_LBNL               @map("BSD-3-Clause-LBNL")
+  BSL_1_0                         @map("BSL-1.0")
+  CAL_1_0                         @map("CAL-1.0")
+  CAL_1_0_COMBINED_WORK_EXCEPTION @map("CAL-1.0-Combined-Work-Exception")
+  CATOSL_1_1                      @map("CATOSL-1.1")
+  CDDL_1_0                        @map("CDDL-1.0")
+  CECILL_2_1                      @map("CECILL-2.1")
+  CERN_OHL_P_2_0                  @map("CERN-OHL-P-2.0")
+  CERN_OHL_S_2_0                  @map("CERN-OHL-S-2.0")
+  CERN_OHL_W_2_0                  @map("CERN-OHL-W-2.0")
+  CNRI_PYTHON                     @map("CNRI-Python")
+  CPAL_1_0                        @map("CPAL-1.0")
+  CPL_1_0                         @map("CPL-1.0")
+  CUA_OPL_1_0                     @map("CUA-OPL-1.0")
+  ECL_1_0                         @map("ECL-1.0")
+  ECL_2_0                         @map("ECL-2.0")
+  EFL_1_0                         @map("EFL-1.0")
+  EFL_2_0                         @map("EFL-2.0")
+  ENTESSA                         @map("Entessa")
+  EPL_1_0                         @map("EPL-1.0")
+  EPL_2_0                         @map("EPL-2.0")
+  EUDATAGRID                      @map("EUDatagrid")
+  EUPL_1_1                        @map("EUPL-1.1")
+  EUPL_1_2                        @map("EUPL-1.2")
+  FAIR                            @map("Fair")
+  FRAMEWORX_1_0                   @map("Frameworx-1.0")
+  GPL_2_0_ONLY                    @map("GPL-2.0-only")
+  GPL_2_0_OR_LATER                @map("GPL-2.0-or-later")
+  GPL_3_0_ONLY                    @map("GPL-3.0-only")
+  GPL_3_0_OR_LATER                @map("GPL-3.0-or-later")
+  HPND                            @map("HPND")
+  INTEL                           @map("Intel")
+  IPA                             @map("IPA")
+  IPL_1_0                         @map("IPL-1.0")
+  ISC                             @map("ISC")
+  JAM                             @map("Jam")
+  LGPL_2_0_ONLY                   @map("LGPL-2.0-only")
+  LGPL_2_0_OR_LATER               @map("LGPL-2.0-or-later")
+  LGPL_2_1_ONLY                   @map("LGPL-2.1-only")
+  LGPL_2_1_OR_LATER               @map("LGPL-2.1-or-later")
+  LGPL_3_0_ONLY                   @map("LGPL-3.0-only")
+  LGPL_3_0_OR_LATER               @map("LGPL-3.0-or-later")
+  LILIQ_P_1_1                     @map("LiLiQ-P-1.1")
+  LILIQ_R_1_1                     @map("LiLiQ-R-1.1")
+  LILIQ_RPLUS_1_1                 @map("LiLiQ-Rplus-1.1")
+  LPL_1_0                         @map("LPL-1.0")
+  LPL_1_02                        @map("LPL-1.02")
+  LPPL_1_3C                       @map("LPPL-1.3c")
+  MIROS                           @map("MirOS")
+  MIT                             @map("MIT")
+  MIT_0                           @map("MIT-0")
+  MIT_MODERN_VARIANT              @map("MIT-Modern-Variant")
+  MOTOSOTO                        @map("Motosoto")
+  MPL_1_0                         @map("MPL-1.0")
+  MPL_1_1                         @map("MPL-1.1")
+  MPL_2_0                         @map("MPL-2.0")
+  MPL_2_0_NO_COPYLEFT_EXCEPTION   @map("MPL-2.0-no-copyleft-exception")
+  MS_PL                           @map("MS-PL")
+  MS_RL                           @map("MS-RL")
+  MULANPSL_2_0                    @map("MulanPSL-2.0")
+  MULTICS                         @map("Multics")
+  NASA_1_3                        @map("NASA-1.3")
+  NAUMEN                          @map("Naumen")
+  NCSA                            @map("NCSA")
+  NGPL                            @map("NGPL")
+  NOKIA                           @map("Nokia")
+  NPOSL_3_0                       @map("NPOSL-3.0")
+  NTP                             @map("NTP")
+  OCLC_2_0                        @map("OCLC-2.0")
+  OFL_1_1                         @map("OFL-1.1")
+  OFL_1_1_NO_RFN                  @map("OFL-1.1-no-RFN")
+  OFL_1_1_RFN                     @map("OFL-1.1-RFN")
+  OGTSL                           @map("OGTSL")
+  OLDAP_2_8                       @map("OLDAP-2.8")
+  OSET_PL_2_1                     @map("OSET-PL-2.1")
+  OSL_1_0                         @map("OSL-1.0")
+  OSL_2_0                         @map("OSL-2.0")
+  OSL_2_1                         @map("OSL-2.1")
+  OSL_3_0                         @map("OSL-3.0")
+  PHP_3_0                         @map("PHP-3.0")
+  PHP_3_01                        @map("PHP-3.01")
+  POSTGRESQL                      @map("PostgreSQL")
+  PYTHON_2_0                      @map("Python-2.0")
+  QPL_1_0                         @map("QPL-1.0")
+  RPL_1_1                         @map("RPL-1.1")
+  RPL_1_5                         @map("RPL-1.5")
+  RPSL_1_0                        @map("RPSL-1.0")
+  RSCPL                           @map("RSCPL")
+  SIMPL_2_0                       @map("SimPL-2.0")
+  SISSL                           @map("SISSL")
+  SLEEPYCAT                       @map("Sleepycat")
+  SPL_1_0                         @map("SPL-1.0")
+  UCL_1_0                         @map("UCL-1.0")
+  UNICODE_DFS_2016                @map("Unicode-DFS-2016")
+  UNLICENSE                       @map("Unlicense")
+  UPL_1_0                         @map("UPL-1.0")
+  VSL_1_0                         @map("VSL-1.0")
+  W3C                             @map("W3C")
+  WATCOM_1_0                      @map("Watcom-1.0")
+  XNET                            @map("Xnet")
+  ZLIB                            @map("Zlib")
+  ZPL_2_0                         @map("ZPL-2.0")
+  ZPL_2_1                         @map("ZPL-2.1")
+}
+
+// Review and Rating Models
+model Review {
+  id            String   @id @default(cuid())
+  name          String   @db.VarChar(100) // Review title/name
+  reviewBody    String   @db.Text // Review content/comment
+  isHelpful     Boolean // True for thumbs up, false for thumbs down
+  datePublished DateTime @default(now())
+
+  // Admin approval fields
+  isPending  Boolean   @default(true) // Reviews need admin approval
+  isApproved Boolean   @default(false)
+  approvedBy String? // Admin user ID who approved
+  approvedAt DateTime?
+
+  // Relations
+  author         User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId       String
+  mcpServer      McpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  mcpServerId    String
+  approvedByUser User?     @relation("ReviewApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  // Prevent duplicate reviews from same user for same server
+  @@unique([authorId, mcpServerId])
+  @@index([mcpServerId])
+  @@index([isHelpful])
+  @@index([datePublished])
+  @@index([isPending])
+  @@index([isApproved])
+}
+
+// User Role enum
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// User Status enum
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+// Blog Post model
+model BlogPost {
+  id          String    @id @default(cuid())
+  title       String    @db.VarChar(200)
+  slug        String    @unique // URL-friendly version of title
+  excerpt     String?   @db.VarChar(500) // Optional short description
+  content     String    @db.Text // Full blog content in Markdown
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+
+  // SEO and metadata
+  metaTitle       String?  @db.VarChar(200)
+  metaDescription String?  @db.VarChar(500)
+  keywords        String[] // Array of keywords for searchability
+
+  // Relations
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([slug])
+  @@index([published])
+  @@index([publishedAt])
+  @@index([authorId])
+  @@index([createdAt])
+}

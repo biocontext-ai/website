@@ -1,0 +1,199 @@
+export const metadata = {
+  title: "Public API | BioContextAI Registry",
+  description:
+    "Access the BioContextAI registry programmatically through our experimental public API. Retrieve MCP server listings, details, and installation configurations.",
+  keywords: ["BioContextAI API", "registry API", "MCP server API", "REST API", "OpenAPI", "programmatic access"],
+  openGraph: {
+    title: "Public API | BioContextAI Registry",
+    description: "Experimental public API for accessing the BioContextAI registry",
+    type: "article",
+  },
+}
+
+# Public API
+
+The BioContextAI registry provides a public REST API for programmatic access to MCP server listings, details, and installation configurations.
+
+## ⚠️ Experimental Status
+
+> **Important**: This API is currently experimental. The versioning scheme is not yet fixed and the API may break or change at any point without notice. Use at your own risk and be prepared to adapt to breaking changes. We plan to stabilize the API in future releases.
+
+## API Endpoints
+
+### Base URL
+
+```
+https://biocontext.ai/api/v1
+```
+
+### Available Endpoints
+
+#### 1. List All MCP Servers
+
+```http
+GET /api/v1/registry
+```
+
+Returns a list of all MCP servers from the registry with basic information and review summaries.
+
+#### 2. Get MCP Server Details
+
+```http
+GET /api/v1/registry/{identifier}
+```
+
+Returns detailed information about a specific MCP server including reviews, README, and tools.
+
+**Parameters:**
+
+- `identifier` - The unique identifier of the MCP server (e.g., `owner/repo`)
+
+## Alternative: Schema.org HTML Parsing
+
+In addition to the public API, you can also extract server information by parsing the HTML of any server detail page. Each registry page includes Schema.org structured data attributes that can be parsed programmatically.
+
+### Schema.org Registry Export
+
+A complete Schema.org-compliant export of all servers is available at:
+
+```
+https://biocontext.ai/registry.json
+```
+
+**Note**: The `registry.json` export contains only Schema.org-compliant fields, which means it has less information than the public API. The public API includes additional fields like reviews, GitHub stars, and README content that are not part of the Schema.org vocabulary.
+
+### Parsing HTML for Schema.org Data
+
+You can parse any server detail page (e.g., `https://biocontext.ai/registry/owner/repo`) to extract Schema.org metadata directly from the HTML. This approach:
+
+- Uses standard Schema.org vocabulary
+- Is stable and follows web standards
+- Works with any Schema.org parser or library
+- Does not depend on the experimental API
+
+**When to use each approach:**
+
+- **Public API** (`/api/v1/registry`): Use when you need full information including reviews, GitHub data, and README content
+- **Schema.org JSON** (`/registry.json`): Use when you need a complete, standards-compliant snapshot of all servers
+- **HTML Parsing**: Use when you need Schema.org data for specific servers and want to avoid API dependencies
+
+## OpenAPI Schema
+
+The complete OpenAPI 3.1.0 schema is available at:
+
+```
+https://biocontext.ai/api/v1/schema.json
+```
+
+You can use this schema to:
+
+- Generate API clients in your preferred programming language
+- Validate API requests and responses
+- Generate API documentation
+- Test the API with tools like Swagger UI or Postman
+
+## Usage Examples
+
+### JavaScript/TypeScript
+
+```javascript
+// Fetch all servers
+const response = await fetch("https://biocontext.ai/api/v1/registry")
+const { data: servers } = await response.json()
+
+// Fetch specific server
+const serverResponse = await fetch("https://biocontext.ai/api/v1/registry/owner/repo")
+const { data: serverDetail } = await serverResponse.json()
+
+// Fetch installation config
+const configResponse = await fetch("https://biocontext.ai/api/v1/registry/owner/repo/mcp.json")
+const mcpConfig = await configResponse.json()
+```
+
+### Python
+
+```python
+import requests
+
+# Fetch all servers
+response = requests.get('https://biocontext.ai/api/v1/registry')
+servers = response.json()['data']
+
+# Fetch specific server
+server_response = requests.get('https://biocontext.ai/api/v1/registry/owner/repo')
+server_detail = server_response.json()['data']
+
+# Fetch installation config
+config_response = requests.get('https://biocontext.ai/api/v1/registry/owner/repo/mcp.json')
+mcp_config = config_response.json()
+```
+
+### cURL
+
+```bash
+# Fetch all servers
+curl https://biocontext.ai/api/v1/registry
+
+# Fetch specific server
+curl https://biocontext.ai/api/v1/registry/owner/repo
+
+# Fetch installation config
+curl https://biocontext.ai/api/v1/registry/owner/repo/mcp.json
+```
+
+## Response Format
+
+All API responses (except `mcp.json` endpoints) follow a standardized format:
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "version": "v1",
+    "total": 42  // Optional, for list endpoints
+  }
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "meta": {
+    "version": "v1"
+  }
+}
+```
+
+## HTTP Status Codes
+
+- `200` - Success
+- `400` - Bad Request (invalid parameters)
+- `404` - Not Found (server or resource not found)
+- `500` - Server Error
+
+## Rate Limiting
+
+Currently, there is no rate limiting on the public API. However, please use the API responsibly. We reserve the right to implement rate limiting in the future if necessary.
+
+## Support
+
+If you encounter issues or have questions about the API:
+
+- Open an issue in our [GitHub repository](https://github.com/biocontext-ai/website)
+- Join our community discussions
+
+## Future Plans
+
+We are actively working on stabilizing the API. Future improvements may include:
+
+- Stable versioning with deprecation notices
+- Pagination for list endpoints
+- Filtering and sorting options
+
+Stay tuned for updates!

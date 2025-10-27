@@ -1,0 +1,377 @@
+export const metadata = {
+  title: "Using Registry Tools | BioContextAI",
+  description:
+    "Complete guide to discovering, installing, and using MCP servers from the BioContextAI Registry. Learn how to integrate biomedical tools with Claude, Gemini, Cursor, VS Code, and other AI assistants.",
+  keywords: [
+    "MCP installation",
+    "MCP server setup",
+    "Claude Desktop MCP",
+    "biomedical tools integration",
+    "AI assistant tools",
+    "registry installation guide",
+    "MCP configuration",
+  ],
+  openGraph: {
+    title: "Using Registry Tools | BioContextAI",
+    description: "Learn how to install and use biomedical MCP servers from the BioContextAI Registry",
+    type: "article",
+  },
+}
+
+# Using Registry Tools
+
+This guide explains how to discover, install, and use MCP servers from the BioContextAI Registry in your research workflows.
+
+> **⚠️ Security Notice**: Third-party MCP servers can access your system resources and execute commands. Always review the server&apos;s source code and only install servers from trusted sources. Check the repository, maintainer reputation, and required permissions before installation.
+
+## Finding Tools
+
+- Visit the [Registry](/registry) to browse and search for available MCP servers.
+- Each server entry includes:
+  - **Description**: Overview of the server&apos;s capabilities
+  - **Documentation**: Links to the server&apos;s README and additional resources
+  - **Installation Config**: Configuration files (mcp.json) for easy setup
+  - **Available Tools**: List of all tools provided by the server with their schemas
+  - **Installation Instructions**: Platform-specific setup guides for multiple AI assistants
+
+## Installation Methods
+
+The BioContextAI Registry provides installation instructions for multiple AI assistants and platforms:
+
+### Claude Desktop & Claude Code
+
+**Claude Desktop:**
+
+Claude Desktop allows you to connect MCP servers by editing a configuration file. The configuration file is located at:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Setup Steps:**
+
+1. Open Claude Desktop and click on the Claude menu in your system's menu bar
+2. Select "Settings..." then navigate to the "Developer" tab
+3. Click "Edit Config" to open the configuration file
+4. Add the MCP server configuration from the registry's `mcp.json` tab
+5. Save the file and completely quit and restart Claude Desktop
+6. Look for the MCP server indicator (🔨) in the bottom-right corner of the input box
+
+**Example Configuration:**
+
+```json
+{
+  "mcpServers": {
+    "server-name": {
+      "command": "npx",
+      "args": ["-y", "@package/name"]
+    }
+  }
+}
+```
+
+**For HTTP servers:**
+
+```json
+{
+  "mcpServers": {
+    "server-name": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+**Security Note:** Only configure servers you trust, as they run with your user account permissions.
+
+**Troubleshooting:**
+
+- Check logs at `~/Library/Logs/Claude` (macOS) or `%APPDATA%\Claude\logs` (Windows)
+- Verify file paths are absolute, not relative
+- Ensure Node.js or Python (for uvx) is installed
+- Try manually running the server command to check for errors
+
+For comprehensive setup instructions, troubleshooting tips, and examples, see:
+[Connect Local MCP Servers to Claude Desktop](https://modelcontextprotocol.io/docs/develop/connect-local-servers)
+
+**Claude Code CLI:**
+
+Install MCP servers directly through the Claude Code CLI:
+
+```bash
+claude mcp install <server-identifier>
+```
+
+**Scope Options:**
+
+- `--scope local`: Install in the current directory (default)
+- `--scope project`: Install for the current project
+- `--scope user`: Install globally for your user
+
+**Post-Installation:**
+
+1. Authenticate with Claude: `/mcp`
+2. Verify installation: `claude mcp list`
+
+**Links:**
+
+- [Download Claude Desktop](https://claude.ai/download)
+- [Download Claude Code](https://claude.ai/download)
+- [Claude Code MCP Documentation](https://docs.claude.com/en/docs/claude-code/mcp)
+
+### Gemini CLI
+
+Use Google&apos;s Gemini CLI to install and manage MCP servers:
+
+**For stdio servers (npx/uvx):**
+
+```bash
+gemini mcp add <server-name> <command> <args>
+```
+
+**For HTTP servers:**
+
+```bash
+gemini mcp add --transport http <server-name> <url>
+```
+
+**Examples:**
+
+```bash
+# Python package with uvx
+gemini mcp add my-server uvx package-name@latest
+
+# Node.js package with npx
+gemini mcp add my-server npx -y @package/name
+
+# HTTP server
+gemini mcp add --transport http remote-server https://api.example.com/mcp
+```
+
+**After installation:**
+
+1. Verify with: `gemini mcp list`
+2. Configure API keys if required by the server
+
+**Links:**
+
+- [Install Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- [MCP Documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md)
+
+### Codex
+
+OpenAI Codex is an open-source coding agent built in Rust that runs in your terminal.
+
+**Installation:**
+
+```bash
+npm install -g @openai/codex
+```
+
+Or with Homebrew:
+
+```bash
+brew install codex
+```
+
+**Adding MCP Servers:**
+
+```bash
+codex mcp add -- <server-name> <command> <args>
+```
+
+**Examples:**
+
+```bash
+# Python package with uvx
+codex mcp add -- my-server uvx package-name@latest
+
+# Node.js package with npx
+codex mcp add -- my-server npx -y @package/name
+
+# HTTP server (using mcp-remote)
+codex mcp add -- remote-server npx -y mcp-remote@latest https://api.example.com/mcp
+```
+
+**Getting Started:**
+
+1. Install Codex CLI
+2. Run `codex` to start
+3. Add MCP servers using the commands above
+4. Authenticate with your ChatGPT account (Plus, Pro, Team, Edu, or Enterprise)
+
+[Learn more about Codex CLI](https://developers.openai.com/codex/cli) | [Codex MCP Documentation](https://developers.openai.com/codex/mcp)
+
+### Cursor
+
+Cursor supports one-click installation via MCP Install Links:
+
+**One-Click Install (Recommended):**
+Each server in the registry provides a Cursor deeplink button that automatically installs the MCP server. Click the "Install in Cursor" button on the server&apos;s detail page.
+
+**Manual Installation:**
+
+1. Open Cursor Settings (Cmd+,)
+2. Navigate to MCP section
+3. Add the server configuration from the provided JSON
+
+[Learn more about Cursor MCP](https://docs.cursor.com/context/mcp)
+
+### VS Code
+
+Install MCP servers in VS Code using the MCP extension:
+
+1. Install the MCP extension from the marketplace
+2. Open the Command Palette (Cmd+Shift+P)
+3. Run: "MCP: Open User Configuration"
+4. Add the server configuration from the provided JSON
+
+**Link:**
+
+- [VS Code MCP Documentation](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)
+
+## Transport Types
+
+MCP servers in the registry use different transport mechanisms:
+
+### HTTP Transport
+
+Servers with HTTP transport provide a URL endpoint:
+
+- Typically accessed via `http://localhost:PORT/mcp` or a remote URL
+- Requires the server to be running before connecting
+- May support SSE (Server-Sent Events) for streaming responses
+
+### Stdio Transport
+
+Servers with stdio transport run as command-line tools:
+
+**NPM Packages** (using npx):
+
+```bash
+npx -y <package-name>
+```
+
+**Python Packages** (using uvx):
+
+```bash
+uvx <package-name>
+```
+
+> **Note:** Some AI assistants require `uvx` to be installed separately. On macOS, you can install it via Homebrew:
+>
+> ```bash
+> brew install uv
+> ```
+
+These servers communicate via standard input/output and are automatically started by your AI assistant.
+
+## Integrating Registry MCP Servers
+
+1. **Find the server** in the [Registry](/registry)
+2. **Review the installation instructions** on the server&apos;s detail page
+3. **Copy the mcp.json configuration** or use the platform-specific commands
+4. **Install using your preferred AI assistant** (Claude, Gemini, Codex, Cursor, or VS Code)
+5. **Restart your client** if required
+6. **Test the connection** by asking your AI assistant to use one of the server&apos;s tools
+
+## Using Multiple Servers
+
+- Most MCP clients support connecting to multiple servers simultaneously
+- You can combine tools from different servers in your workflows
+- Be specific in your queries if you want to target a particular server or tool
+- Each server&apos;s tools are namespaced to avoid conflicts
+
+## Understanding Server Capabilities
+
+Each server in the registry provides:
+
+### Available Tools
+
+- Complete list of all tools the server exposes
+- Input and output schemas for each tool
+- Descriptions of what each tool does
+
+### Configuration Options
+
+- Environment variables that may be required
+- Optional settings for customization
+- Authentication requirements (API keys, tokens, etc.)
+
+### Documentation
+
+- README with detailed usage instructions
+- Links to the server&apos;s GitHub repository
+- Additional resources and examples
+
+## Best Practices
+
+- **Check documentation**: Each server may have different capabilities, limitations, and setup requirements
+- **Review available tools**: Understand what each server can do before integrating it
+- **Configure properly**: Set up required environment variables and API keys
+- **Be specific**: Reference the tool or database you want to use in your queries
+- **Validate outputs**: Cross-check results with primary sources when possible
+- **Report issues**: Use the server&apos;s GitHub repository to report bugs or request features
+- **Keep updated**: Reinstall or update servers periodically to get improvements and security fixes
+
+## Troubleshooting
+
+### Server Not Found
+
+- Verify the server identifier is correct
+- Check that you&apos;re using the latest version of your AI assistant
+- Ensure the server is still available in the registry
+
+### Connection Failed
+
+- For HTTP servers: Verify the server is running and accessible
+- For stdio servers: Check that the required runtime (Node.js or Python) is installed
+- Review environment variables and authentication settings
+
+### Tool Not Working
+
+- Check the tool&apos;s input schema to ensure you&apos;re providing correct parameters
+- Review the server&apos;s documentation for usage examples
+- Look for error messages in your AI assistant&apos;s output
+
+### Performance Issues
+
+- Some servers may have rate limits or quotas
+- Consider self-hosting for high-throughput use cases
+- Check if the server supports caching or batch operations
+
+## Self-Hosting Registry Tools
+
+Many registry servers support or require self-hosting:
+
+### When to Self-Host
+
+- Advanced or high-throughput use cases
+- Need for custom configuration
+- Privacy or security requirements
+- Development and testing
+
+### How to Self-Host
+
+1. Clone the server&apos;s GitHub repository
+2. Follow installation instructions (may involve Docker, uv, npm, or other tools)
+3. Configure environment variables and settings
+4. Start the server locally or deploy to your infrastructure
+5. Update your AI assistant&apos;s configuration to point to your hosted instance
+
+### Self-Hosting Benefits
+
+- Full control over the server and data
+- No rate limits or quotas
+- Ability to modify and extend functionality
+- Better performance for local data sources
+
+## Learn More
+
+- [BioContextAI Registry Directory](/registry)
+- [MCP Protocol Specification](https://spec.modelcontextprotocol.io/)
+- [IDE Integration Guide](/docs/knowledgebase/ide)
+- [Chatbot Integration Guide](/docs/knowledgebase/chatbot)
+
+```
+
+```

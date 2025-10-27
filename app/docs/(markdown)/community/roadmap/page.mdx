@@ -1,0 +1,44 @@
+export const metadata = {
+  title: "BioContextAI Roadmap | Community",
+  description:
+    "Explore the future development plans for BioContextAI including local installations, MCP metaregistry integration, local model support, and registry CLI tools.",
+  keywords: [
+    "BioContextAI roadmap",
+    "MCP development",
+    "local model support",
+    "registry CLI",
+    "MCP metaregistry",
+    "future features",
+  ],
+  openGraph: {
+    title: "BioContextAI Roadmap | Community",
+    description: "Future development objectives for the BioContextAI project",
+    type: "article",
+  },
+}
+
+# Roadmap
+
+We would like to outline some key objectives for the future development of BioContextAI over the coming months. This list is not intended to be exhaustive, detailed, or fully updated. For more information, please refer to the relevant GitHub repositories. Contributions to all the mentioned projects, as well as any new ideas, are greatly appreciated.
+
+## Local installation instructions & tool overviews
+
+Currently, only the installation URL for **remote** MCP servers is included in the registry schema. While we provide access to the corresponding README, which often contains installation instructions for local MCP servers, for all GitHub-hosted MCP servers this metadata is not yet standardized or enforced. Additionally, the automated listing of available tools, along with their descriptions and input schema, is currently only accessible for remote MCP servers within the BioContextAI web application. We plan to extend this functionality to include local-only MCP servers as well.
+
+### Incorporate data from MCP metaregistry
+
+The creators of the Model Context Protocol are currently working on an MCP server, "metaregistry," where they plan to list all available MCPs. This metaregistry is currently planned to be much narrower in scope than BioContextAI, with the stated aim of the authors being to provide an API that more specialized registries - such as BioContextAI - can use as an alternative to user submissions and web scraping to find and list additional MCPs and then combine it with additional data, graphical user interfaces, and further applications.
+
+As of June 2025, the metaregistry is still in development with no fixed standards yet and no community adaptation. If such standards are established, compatible with FAIR4RS principles and there will be foreseeable community adaptation, we will adapt the provided schema for defining dependencies and installation instructions.
+
+### Registry CLI / Python package
+
+We plan to make the content from the Registry available through an additional Python package, which will also be accessible via a command-line interface (CLI). This package will enable users to search for MCP servers and set them up locally if needed. This functionality will rely on a defined schema for installation instructions. If the MCP metaregistry effort is abandoned or rejected by the community, we will still provide standards for specifying installation instructions.
+
+## Using local models
+
+Biomedical data is often sensitive, and concerns related to regulations, data privacy, or politics may restrict your ability to share research with large language models (LLMs) hosted remotely by for-profit companies. While it is already feasible to set up most MCP servers, including the BioContextAI Knowledgebase MCP, locally using Ollama models through PydanticAI or by creating a local web app with the Vercel AI SDK, we aim to simplify this process. We are working on providing a comprehensive, self-contained version of BioContextAI Chat that can operate with your local models without requiring internet access.
+
+## Remote hosting of official MCP servers
+
+Details to be added.
