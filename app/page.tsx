@@ -3,7 +3,7 @@ import Zulip from "@/components/icons/zulip"
 import Logo from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Book, Bot, Database, PlusCircle, Users } from "lucide-react"
+import { Book, Bot, Database, Hammer, PlusCircle, Users } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -102,14 +102,14 @@ export default function HomePage() {
                 We invite researchers and developers to engage with BioContextAI by contributing MCP servers, developing
                 agents, and integrating tools into their research workflows.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <Button asChild variant="outline" className="h-auto py-3 px-5 flex items-center gap-2">
+              <div className="flex flex-col md:flex-row gap-2 justify-center">
+                <Button asChild variant="outline" className="w-full md:w-auto h-auto py-3 px-5 flex items-center gap-2">
                   <Link href="/docs">
                     <Book className="w-5 h-5" />
                     <span className="text-sm">Read the Documentation</span>
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="h-auto py-3 px-5 flex items-center gap-2">
+                <Button asChild variant="outline" className="w-full md:w-auto h-auto py-3 px-5 flex items-center gap-2">
                   <Link
                     href="https://scverse.zulipchat.com/#narrow/channel/518508"
                     target="_blank"
@@ -117,6 +117,12 @@ export default function HomePage() {
                   >
                     <Zulip className="w-5 h-5" />
                     <span className="text-sm">Join Discussion on Zulip</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full md:w-auto h-auto py-3 px-5 flex items-center gap-2">
+                  <Link href="/docs/registry/template" target="_blank" rel="noopener noreferrer">
+                    <Hammer className="w-5 h-5" />
+                    <span className="text-sm">Use the Template</span>
                   </Link>
                 </Button>
               </div>
