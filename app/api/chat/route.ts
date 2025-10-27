@@ -240,10 +240,12 @@ export async function POST(req: NextRequest) {
       modelName = model
     } else {
       // Default to Gemini or use specified Gemini model
+      // Use user's API key if provided, otherwise use community key
       provider = createGoogleGenerativeAI({
-        apiKey: process.env.GEMINI_API_KEY as string,
+        apiKey: (key || process.env.GEMINI_API_KEY) as string,
       })
       modelName = model || "gemini-2.5-flash"
+      // Validate and default to supported model if needed
       if (modelName && ["gemini-2.5-flash", "gemini-2.5-flash-lite"].indexOf(modelName) === -1) {
         modelName = "gemini-2.5-flash"
       }
