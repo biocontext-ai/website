@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useChatStore } from "@/stores/chat"
 import { UIMessage } from "ai"
 import { AlertTriangle, Key, X } from "lucide-react"
@@ -28,6 +29,7 @@ interface ModelOption {
   name: string
   provider: "google" | "openai" | "anthropic"
   requiresApiKey: boolean
+  supportsOptionalApiKey?: boolean
   description?: string
   badge?: string
   icon?: React.ReactNode
@@ -39,63 +41,10 @@ const models: ModelOption[] = [
     name: "Gemini 2.5 Flash",
     provider: "google",
     requiresApiKey: false,
-    description: "Free model using the community key (may have stricter rate limit)",
+    supportsOptionalApiKey: true,
+    description: "Free with community key, or use your own API key for higher limits",
     badge: "Free",
     icon: <Gemini className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gemini-2.5-flash-lite-latest",
-    name: "Gemini 2.5 Flash Lite",
-    provider: "google",
-    requiresApiKey: false,
-    description: "Fast and free model using the community key (may be rate-limited)",
-    badge: "Free",
-    icon: <Gemini className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-4.1-mini-2025-04-14",
-    name: "GPT-4.1 Mini",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Cost-effective OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-4.1-2025-04-14",
-    name: "GPT-4.1",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Capable OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-5-nano",
-    name: "GPT-5 Nano",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Small and cheap OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-5-mini",
-    name: "GPT-5 Mini",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "New and cost-optimized OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-5",
-    name: "GPT-5",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Newest & most capable OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
   },
   {
     id: "claude-haiku-4-5",
@@ -124,6 +73,42 @@ const models: ModelOption[] = [
     badge: "API Key Required",
     icon: <Claude className="h-4 w-4 mr-2" />,
   },
+  {
+    id: "gpt-4.1-mini-2025-04-14",
+    name: "GPT-4.1 Mini",
+    provider: "openai",
+    requiresApiKey: true,
+    description: "Cost-effective OpenAI model",
+    badge: "API Key Required",
+    icon: <OpenAI className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "gpt-4.1-2025-04-14",
+    name: "GPT-4.1",
+    provider: "openai",
+    requiresApiKey: true,
+    description: "Capable OpenAI model",
+    badge: "API Key Required",
+    icon: <OpenAI className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "gpt-5-mini",
+    name: "GPT-5 Mini",
+    provider: "openai",
+    requiresApiKey: true,
+    description: "New and cost-optimized OpenAI model",
+    badge: "API Key Required",
+    icon: <OpenAI className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "gpt-5",
+    name: "GPT-5",
+    provider: "openai",
+    requiresApiKey: true,
+    description: "Newest & most capable OpenAI model",
+    badge: "API Key Required",
+    icon: <OpenAI className="h-4 w-4 mr-2" />,
+  },
 ]
 
 type ModelPickerProps = {
@@ -133,15 +118,29 @@ type ModelPickerProps = {
 export default function ModelPicker({ setMessages }: ModelPickerProps) {
   // Use Zustand store
   const selectedModel = useChatStore(useShallow((state) => state.selectedModel))
-  const apiKey = useChatStore(useShallow((state) => state.apiKey))
+  const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
+  const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
+  const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
+  const useGoogleCommunityKey = useChatStore(useShallow((state) => state.useGoogleCommunityKey))
   const setSelectedModel = useChatStore(useShallow((state) => state.setSelectedModel))
-  const setApiKey = useChatStore(useShallow((state) => state.setApiKey))
+  const setApiKeyForProvider = useChatStore(useShallow((state) => state.setApiKeyForProvider))
+  const setUseGoogleCommunityKey = useChatStore(useShallow((state) => state.setUseGoogleCommunityKey))
 
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
-  const [tempApiKey, setTempApiKey] = useState(apiKey || "")
+  const [tempApiKey, setTempApiKey] = useState("")
   const [pendingModel, setPendingModel] = useState<string>("")
 
   const currentModel = models.find((m) => m.id === selectedModel)
+
+  // Get API key for current model
+  const apiKey = (() => {
+    if (!currentModel) return null
+    if (currentModel.provider === "openai") return openaiApiKey
+    if (currentModel.provider === "anthropic") return anthropicApiKey
+    // For Google, check if using community key
+    if (useGoogleCommunityKey) return null
+    return googleApiKey
+  })()
 
   const handleSetSelectedModel = (modelId: string) => {
     setSelectedModel(modelId)
@@ -151,14 +150,22 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
     const model = models.find((m) => m.id === modelId)
     if (!model) return
 
+    // Get the API key for the target model
+    let targetApiKey: string | null = null
+    if (model.provider === "openai") {
+      targetApiKey = openaiApiKey
+    } else if (model.provider === "anthropic") {
+      targetApiKey = anthropicApiKey
+    } else {
+      targetApiKey = googleApiKey
+    }
+
     // Check if we need to prompt for API key
-    const needsApiKeyPrompt =
-      model.requiresApiKey &&
-      (!apiKey || // No API key exists
-        (currentModel && currentModel.provider !== model.provider)) // Switching between different providers
+    const needsApiKeyPrompt = model.requiresApiKey && !targetApiKey
 
     if (needsApiKeyPrompt) {
       setPendingModel(modelId)
+      setTempApiKey("")
       setShowApiKeyDialog(true)
     } else {
       handleSetSelectedModel(modelId)
@@ -169,16 +176,21 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
     if (!tempApiKey.trim()) return
 
     const modelToUse = pendingModel || selectedModel
-    setApiKey(tempApiKey.trim())
+    const targetModel = models.find((m) => m.id === modelToUse)
+    if (!targetModel) return
+
+    // Save the API key for the appropriate provider
+    setApiKeyForProvider(targetModel.provider, tempApiKey.trim())
     handleSetSelectedModel(modelToUse)
     setShowApiKeyDialog(false)
     setPendingModel("")
+    setTempApiKey("")
   }
 
   const removeApiKey = () => {
-    setApiKey(null)
+    if (!currentModel) return
+    setApiKeyForProvider(currentModel.provider, null)
     setTempApiKey("")
-    handleSetSelectedModel("gemini-2.5-flash-latest")
   }
 
   return (
@@ -219,49 +231,96 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
           </Select>
         </div>
 
-        {currentModel?.requiresApiKey && apiKey && (
-          <div className="flex items-center gap-1.5 ml-2">
-            <Badge variant="outline" className="text-xs h-6">
-              <Key className="h-3 w-3 mr-1" />
-              Set
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setPendingModel(selectedModel)
-                setShowApiKeyDialog(true)
-              }}
-              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-              title="Change API key"
-            >
-              Edit
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={removeApiKey}
-              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-              title="Remove API key"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        )}
-
-        {currentModel?.requiresApiKey && !apiKey && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setPendingModel(selectedModel)
-              setShowApiKeyDialog(true)
-            }}
-            className="h-6 px-2 text-xs ml-2"
-          >
-            <Key className="h-3 w-3 mr-1" />
-            Add Key
-          </Button>
+        {/* Show API key UI if model accepts keys (required or optional) */}
+        {(currentModel?.requiresApiKey || currentModel?.supportsOptionalApiKey) && (
+          <>
+            {currentModel?.supportsOptionalApiKey && googleApiKey ? (
+              // Google model with API key stored - show switch
+              <div className="flex items-center gap-2 ml-2">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="key-switch" className="text-xs text-muted-foreground cursor-pointer">
+                    Community
+                  </Label>
+                  <Switch
+                    id="key-switch"
+                    checked={!useGoogleCommunityKey}
+                    onCheckedChange={(checked) => setUseGoogleCommunityKey(!checked)}
+                    className="h-5"
+                  />
+                  <Label htmlFor="key-switch" className="text-xs text-muted-foreground cursor-pointer">
+                    My Key
+                  </Label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPendingModel(selectedModel)
+                    setTempApiKey("")
+                    setShowApiKeyDialog(true)
+                  }}
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  title="Edit stored API key"
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeApiKey}
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  title="Remove API key"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : apiKey ? (
+              // Using API key (non-Google or Google without stored key)
+              <div className="flex items-center gap-1.5 ml-2">
+                <Badge variant="outline" className="text-xs h-6">
+                  <Key className="h-3 w-3 mr-1" />
+                  Set
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPendingModel(selectedModel)
+                    setTempApiKey("")
+                    setShowApiKeyDialog(true)
+                  }}
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  title="Change API key"
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeApiKey}
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  title="Remove API key"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              // No key set
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPendingModel(selectedModel)
+                  setTempApiKey("")
+                  setShowApiKeyDialog(true)
+                }}
+                className="h-6 px-2 text-xs ml-2"
+              >
+                <Key className="h-3 w-3 mr-1" />
+                {currentModel?.supportsOptionalApiKey ? "Add Key (Optional)" : "Add Key"}
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -270,15 +329,28 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />
-              {apiKey ? "Update API Key" : "API Key Required"}
+              {apiKey
+                ? "Update API Key"
+                : pendingModel
+                  ? models.find((m) => m.id === pendingModel)?.supportsOptionalApiKey
+                    ? "Add API Key (Optional)"
+                    : "API Key Required"
+                  : "API Key"}
             </DialogTitle>
             <DialogDescription>
               {(() => {
                 const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
-                const providerName = targetModel?.provider === "openai" ? "OpenAI" : "Anthropic"
+                const providerName =
+                  targetModel?.provider === "openai"
+                    ? "OpenAI"
+                    : targetModel?.provider === "google"
+                      ? "Google"
+                      : "Anthropic"
                 return apiKey
                   ? `Update your ${providerName} API key to continue using this model.`
-                  : `To use ${providerName} models, you need to provide your own API key.`
+                  : targetModel?.supportsOptionalApiKey
+                    ? `Optionally provide your own ${providerName} API key to unlock higher rate limits. You can also skip this and use the free community key.`
+                    : `To use ${providerName} models, you need to provide your own API key.`
               })()}
             </DialogDescription>
           </DialogHeader>
@@ -286,22 +358,58 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
           <Alert>
             <AlertTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Important Information
+              {(() => {
+                const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
+                return targetModel?.supportsOptionalApiKey ? "About API Keys" : "Important Information"
+              })()}
             </AlertTitle>
             <AlertDescription className="space-y-2">
-              <p>By providing your API key, you understand that:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>You are responsible for the usage and security of your API key</li>
-                <li>
-                  Data you submit will be processed by BioContextAI, its subcontractors, and the selected AI provider
-                </li>
-                <li>Standard API usage charges will apply to your account</li>
-                <li>Your API key is stored temporarily in your browser session and processed on our servers</li>
-                <li>
-                  We highly recommend using a dedicated API key for this session and to configure a usage limit in your
-                  provider account to avoid unexpected charges
-                </li>
-              </ul>
+              {(() => {
+                const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
+                if (targetModel?.supportsOptionalApiKey) {
+                  return (
+                    <>
+                      <p>
+                        <strong>You can use this model for free with the community key.</strong> However, if you provide
+                        your own API key:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li>You will have higher rate limits</li>
+                        <li>You are responsible for the usage and security of your API key</li>
+                        <li>
+                          Data you submit will be processed by BioContextAI, its subcontractors, and the selected AI
+                          provider
+                        </li>
+                        <li>Standard API usage charges will apply to your account</li>
+                        <li>Your API key is stored temporarily in your browser session and processed on our servers</li>
+                        <li>
+                          We recommend using a dedicated API key and configuring a usage limit in your provider account
+                          to avoid unexpected charges
+                        </li>
+                      </ul>
+                    </>
+                  )
+                } else {
+                  return (
+                    <>
+                      <p>By providing your API key, you understand that:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li>You are responsible for the usage and security of your API key</li>
+                        <li>
+                          Data you submit will be processed by BioContextAI, its subcontractors, and the selected AI
+                          provider
+                        </li>
+                        <li>Standard API usage charges will apply to your account</li>
+                        <li>Your API key is stored temporarily in your browser session and processed on our servers</li>
+                        <li>
+                          We highly recommend using a dedicated API key for this session and to configure a usage limit
+                          in your provider account to avoid unexpected charges
+                        </li>
+                      </ul>
+                    </>
+                  )
+                }
+              })()}
             </AlertDescription>
           </Alert>
 
@@ -309,7 +417,11 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
             <Label htmlFor="api-key">
               {(() => {
                 const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
-                return targetModel?.provider === "openai" ? "OpenAI" : "Anthropic"
+                return targetModel?.provider === "openai"
+                  ? "OpenAI"
+                  : targetModel?.provider === "google"
+                    ? "Google"
+                    : "Anthropic"
               })()}{" "}
               API Key
             </Label>
@@ -320,11 +432,17 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
               onChange={(e) => setTempApiKey(e.target.value)}
               placeholder={(() => {
                 const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
-                return targetModel?.provider === "openai" ? "sk-..." : "sk-ant-..."
+                return targetModel?.provider === "openai"
+                  ? "sk-..."
+                  : targetModel?.provider === "google"
+                    ? "AIza..."
+                    : "sk-ant-..."
               })()}
               className="font-mono"
             />
-            <p className="text-xs text-muted-foreground">Your API key will be used for this session only.</p>
+            <p className="text-xs text-muted-foreground">
+              Your API key will be stored in your browser&apos;s local storage.
+            </p>
           </div>
 
           <DialogFooter className="flex flex-col-reverse md:flex-row gap-2">
@@ -333,19 +451,42 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
               onClick={() => {
                 setShowApiKeyDialog(false)
                 setPendingModel("")
-                // Reset to original API key value from store when canceling
-                setTempApiKey(apiKey || "")
+                setTempApiKey("")
               }}
             >
-              Cancel
+              {pendingModel && models.find((m) => m.id === pendingModel)?.supportsOptionalApiKey ? "Skip" : "Cancel"}
             </Button>
-            <Button onClick={handleApiKeySubmit} disabled={!tempApiKey.trim()}>
+            <Button
+              onClick={() => {
+                const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
+                if (targetModel?.supportsOptionalApiKey && !tempApiKey.trim()) {
+                  // For optional keys, just switch the model without API key
+                  handleSetSelectedModel(pendingModel || selectedModel)
+                  setShowApiKeyDialog(false)
+                  setPendingModel("")
+                  setTempApiKey("")
+                } else {
+                  handleApiKeySubmit()
+                }
+              }}
+              disabled={(() => {
+                const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
+                return targetModel?.requiresApiKey && !tempApiKey.trim()
+              })()}
+            >
               {apiKey
                 ? "Update API Key"
                 : `Use ${(() => {
                     const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
-                    return targetModel?.provider === "openai" ? "OpenAI" : "Anthropic"
-                  })()} Model`}
+                    return targetModel?.provider === "openai"
+                      ? "OpenAI"
+                      : targetModel?.provider === "google"
+                        ? "Google"
+                        : "Anthropic"
+                  })()} ${(() => {
+                    const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
+                    return targetModel?.supportsOptionalApiKey ? "API Key" : "Model"
+                  })()}`}
             </Button>
           </DialogFooter>
         </DialogContent>

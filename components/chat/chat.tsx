@@ -534,10 +534,21 @@ export default function Chat({ name: name }: { name?: string }) {
   // Use Zustand store for all chat state
   const mcpServers = useChatStore(useShallow((state) => state.mcpServers))
   const selectedModel = useChatStore(useShallow((state) => state.selectedModel))
-  const apiKey = useChatStore(useShallow((state) => state.apiKey))
-  const getCurrentConversation = useChatStore(useShallow((state) => state.getCurrentConversation))
+  const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
+  const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
+  const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
+  const useGoogleCommunityKey = useChatStore(useShallow((state) => state.useGoogleCommunityKey))
   const setMcpServers = useChatStore(useShallow((state) => state.setMcpServers))
-  const clearMessages = useChatStore((state) => state.clearMessages)
+
+  // Get API key based on selected model
+  const apiKey = (() => {
+    if (selectedModel.startsWith("gpt-")) return openaiApiKey
+    if (selectedModel.startsWith("claude-")) return anthropicApiKey
+    // For Google models, check community key flag
+    if (useGoogleCommunityKey) return null
+    return googleApiKey
+  })()
+
   const addMessage = useChatStore(useShallow((state) => state.addMessage))
   const setMessages = useChatStore(useShallow((state) => state.setMessages))
   const deleteMessage = useChatStore(useShallow((state) => state.deleteMessage))

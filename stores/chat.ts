@@ -23,7 +23,14 @@ export interface ChatSettings {
 
   // Model configuration
   selectedModel: string
-  apiKey: string | null
+
+  // API keys per provider
+  googleApiKey: string | null
+  openaiApiKey: string | null
+  anthropicApiKey: string | null
+
+  // Whether to use community key for Google instead of user's key
+  useGoogleCommunityKey: boolean
 
   // Conversations
   conversations: Conversation[]
@@ -39,7 +46,12 @@ export interface ChatActions {
 
   // Model actions
   setSelectedModel: (modelId: string) => void
-  setApiKey: (key: string | null) => void
+  setGoogleApiKey: (key: string | null) => void
+  setOpenaiApiKey: (key: string | null) => void
+  setAnthropicApiKey: (key: string | null) => void
+  setUseGoogleCommunityKey: (use: boolean) => void
+  getApiKeyForModel: (modelId: string) => string | null
+  setApiKeyForProvider: (provider: "google" | "openai" | "anthropic", key: string | null) => void
 
   // Conversation actions
   createConversation: () => string
@@ -90,7 +102,10 @@ const createNewConversation = (): Conversation => ({
 const initialState: ChatSettings = {
   mcpServers: DEFAULT_MCP_SERVERS,
   selectedModel: DEFAULT_MODEL,
-  apiKey: null,
+  googleApiKey: null,
+  openaiApiKey: null,
+  anthropicApiKey: null,
+  useGoogleCommunityKey: true,
   conversations: [createNewConversation()],
   currentConversationId: null,
 }
@@ -128,10 +143,49 @@ export const useChatStore = create<ChatStore>()(
           selectedModel: modelId,
         })),
 
-      setApiKey: (key) =>
+      setGoogleApiKey: (key) =>
         set(() => ({
-          apiKey: key,
+          googleApiKey: key,
         })),
+
+      setOpenaiApiKey: (key) =>
+        set(() => ({
+          openaiApiKey: key,
+        })),
+
+      setAnthropicApiKey: (key) =>
+        set(() => ({
+          anthropicApiKey: key,
+        })),
+
+      setUseGoogleCommunityKey: (use) =>
+        set(() => ({
+          useGoogleCommunityKey: use,
+        })),
+
+      setApiKeyForProvider: (provider, key) =>
+        set(() => {
+          if (provider === "google") {
+            // When setting a Google API key, automatically switch to using it
+            return { googleApiKey: key, useGoogleCommunityKey: key === null }
+          } else if (provider === "openai") {
+            return { openaiApiKey: key }
+          } else {
+            return { anthropicApiKey: key }
+          }
+        }),
+
+      getApiKeyForModel: (modelId) => {
+        const state = get()
+        if (modelId.startsWith("gpt-")) {
+          return state.openaiApiKey
+        } else if (modelId.startsWith("claude-")) {
+          return state.anthropicApiKey
+        } else {
+          // For Google models, return null if using community key
+          return state.useGoogleCommunityKey ? null : state.googleApiKey
+        }
+      },
 
       // Conversation actions
       createConversation: () => {
@@ -253,12 +307,19 @@ export const useChatStore = create<ChatStore>()(
           }
         }),
 
-      resetAllSettings: () =>
+      resetAllSettings: () => {
+        const newConversation = createNewConversation()
         set(() => ({
-          ...initialState,
-          conversations: [createNewConversation()],
-          currentConversationId: null,
-        })),
+          mcpServers: DEFAULT_MCP_SERVERS,
+          selectedModel: DEFAULT_MODEL,
+          googleApiKey: null,
+          openaiApiKey: null,
+          anthropicApiKey: null,
+          useGoogleCommunityKey: true,
+          conversations: [newConversation],
+          currentConversationId: newConversation.id,
+        }))
+      },
     }),
     {
       name: "biocontext-chat-store",
@@ -266,11 +327,14 @@ export const useChatStore = create<ChatStore>()(
       partialize: (state) => ({
         mcpServers: state.mcpServers,
         selectedModel: state.selectedModel,
-        apiKey: state.apiKey,
+        googleApiKey: state.googleApiKey,
+        openaiApiKey: state.openaiApiKey,
+        anthropicApiKey: state.anthropicApiKey,
+        useGoogleCommunityKey: state.useGoogleCommunityKey,
         conversations: state.conversations,
         currentConversationId: state.currentConversationId,
       }),
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to version 2
         if (version === 1) {
@@ -290,9 +354,35 @@ export const useChatStore = create<ChatStore>()(
           return {
             mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
             selectedModel: oldState.selectedModel || DEFAULT_MODEL,
-            apiKey: oldState.apiKey || null,
+            googleApiKey: null,
+            openaiApiKey: null,
+            anthropicApiKey: null,
+            useGoogleCommunityKey: true,
             conversations: [newConversation],
             currentConversationId: newConversation.id,
+          }
+        }
+
+        // Migrate from version 2 to version 3
+        if (version === 2) {
+          const oldState = persistedState as {
+            mcpServers: McpServer[]
+            selectedModel: string
+            apiKey: string | null
+            conversations: Conversation[]
+            currentConversationId: string | null
+          }
+
+          // Simplified migration: just drop old API keys
+          return {
+            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+            googleApiKey: null,
+            openaiApiKey: null,
+            anthropicApiKey: null,
+            useGoogleCommunityKey: true,
+            conversations: oldState.conversations || [createNewConversation()],
+            currentConversationId: oldState.currentConversationId || null,
           }
         }
 
