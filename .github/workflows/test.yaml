@@ -1,10 +1,8 @@
 name: Lint, build & test
 
 on:
-  pull_request:
-    branches: [main, dev]
   push:
-    branches: [main, dev]
+    branches: [main]
 
 jobs:
   build-deploy:
