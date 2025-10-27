@@ -120,7 +120,7 @@ export default function HomePage() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full md:w-auto h-auto py-3 px-5 flex items-center gap-2">
-                  <Link href="https://biocontext.ai/docs/registry/template" target="_blank" rel="noopener noreferrer">
+                  <Link href="/docs/registry/template" target="_blank" rel="noopener noreferrer">
                     <Hammer className="w-5 h-5" />
                     <span className="text-sm">Use the Template</span>
                   </Link>
