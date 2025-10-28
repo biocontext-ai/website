@@ -41,6 +41,35 @@ npm run build
 npm run start
 ```
 
+## Initial Data Import (Development)
+
+1. Copy the example environment file:
+
+	```bash
+	cp .env.local.example .env
+	```
+
+2. Edit `.env` and set a valid `CRON_SECRET` value.
+
+3. Start your dev server:
+
+	```bash
+	npm run dev
+	```
+
+4. Import initial registry and GitHub data:
+
+	```bash
+	./import-registry.sh
+	./import-github-data.sh
+	```
+
+These scripts require a valid `CRON_SECRET` in your `.env` and will POST to your local server at `http://localhost:3000` using Bearer authentication.
+
+You also need to generate a GitHub token with `gh auth token` and adjust the `GITHUB_TOKEN` environment variable.
+
+If you need to re-import or reset data, simply re-run these scripts after starting your dev server.
+
 ## Acknowledgements
 
 Partly based on the Auth.js Next.js example (licensed under the [ISC License](https://github.com/nextauthjs/next-auth/blob/main/LICENSE)).

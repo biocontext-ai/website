@@ -537,15 +537,13 @@ export default function Chat({ name: name }: { name?: string }) {
   const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
   const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
   const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
-  const useGoogleCommunityKey = useChatStore(useShallow((state) => state.useGoogleCommunityKey))
   const setMcpServers = useChatStore(useShallow((state) => state.setMcpServers))
 
   // Get API key based on selected model
   const apiKey = (() => {
     if (selectedModel.startsWith("gpt-")) return openaiApiKey
     if (selectedModel.startsWith("claude-")) return anthropicApiKey
-    // For Google models, check community key flag
-    if (useGoogleCommunityKey) return null
+    // For Google models, return the key (null means use community key)
     return googleApiKey
   })()
 
@@ -848,6 +846,23 @@ export default function Chat({ name: name }: { name?: string }) {
                     }
                   />
                 </Fragment>
+              )}
+              {status === "submitted" && (
+                <div className="flex w-full items-start gap-2 justify-start mb-4 animate-in fade-in duration-300">
+                  <div className="flex flex-col items-start max-w-[85%]">
+                    <span className="text-xs font-medium text-muted-foreground mb-1 px-1">BioContextAI Chat</span>
+                    <div className="rounded-2xl px-4 py-3 bg-muted/50 text-foreground rounded-bl-md">
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                        </div>
+                        <span className="text-sm text-muted-foreground">Processing...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { MCPServerWithReviewSummary } from "@/lib/registry"
-import { Book, BookmarkIcon, Copy, ExternalLink, ThumbsUp, User, Users } from "lucide-react"
+import { Book, BookmarkIcon, Copy, ExternalLink, Settings, ThumbsUp, User, Users, Wifi } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -42,14 +42,26 @@ export default function RegistryCard({ item, children }: RegistryCardProps) {
         itemID={item["@id"]}
       >
         {/* Installation Available Indicator - Floating Badge */}
-        {item.installationConfig && (
-          <div className="absolute -top-3 -right-3 z-10">
-            <Badge
-              variant="default"
-              className="text-xs bg-blue-500 hover:bg-blue-600 text-white border-2 border-white dark:border-gray-950 shadow-md"
-            >
-              mcp.json available
-            </Badge>
+        {(item.installationConfig || item.url) && (
+          <div className="absolute -top-3 -right-3 z-10 flex gap-1">
+            {item.url && (
+              <Badge
+                variant="default"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
+              >
+                <Wifi className="w-3 h-3 mr-1" />
+                Remote
+              </Badge>
+            )}
+            {item.installationConfig && (
+              <Badge
+                variant="default"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
+              >
+                <Settings className="w-3 h-3 mr-1" />
+                mcp.json
+              </Badge>
+            )}
           </div>
         )}
 

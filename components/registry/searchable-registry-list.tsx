@@ -16,6 +16,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, useTransition } from "react"
 import { Button } from "../ui/button"
+import FilterPills from "./filter-pills"
 import RegistryList from "./registry-list"
 import RegistrySkeleton from "./registry-skeleton"
 import SearchInput from "./search-input"
@@ -42,11 +43,19 @@ export default function SearchableRegistryList({
   // Initialize state from URL params
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get("sort") as SortOption) || "alphabetical")
+  const [hasInstallation, setHasInstallation] = useState(searchParams.get("hasInstallation") === "true")
+  const [isRemote, setIsRemote] = useState(searchParams.get("isRemote") === "true")
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [isDebouncing, setIsDebouncing] = useState(false)
 
-  // Update URL when search, sort, or page changes
-  const updateURL = (updates: { search?: string; sort?: string; page?: number }) => {
+  // Update URL when search, sort, filters, or page changes
+  const updateURL = (updates: {
+    search?: string
+    sort?: string
+    page?: number
+    hasInstallation?: boolean
+    isRemote?: boolean
+  }) => {
     const newSearchParams = new URLSearchParams(searchParams.toString())
 
     if (updates.search !== undefined) {
@@ -75,6 +84,26 @@ export default function SearchableRegistryList({
       } else {
         newSearchParams.delete("page")
       }
+    }
+
+    if (updates.hasInstallation !== undefined) {
+      if (updates.hasInstallation) {
+        newSearchParams.set("hasInstallation", "true")
+      } else {
+        newSearchParams.delete("hasInstallation")
+      }
+      // Reset to page 1 when filter changes
+      newSearchParams.delete("page")
+    }
+
+    if (updates.isRemote !== undefined) {
+      if (updates.isRemote) {
+        newSearchParams.set("isRemote", "true")
+      } else {
+        newSearchParams.delete("isRemote")
+      }
+      // Reset to page 1 when filter changes
+      newSearchParams.delete("page")
     }
 
     const newURL = `/registry${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ""}`
@@ -117,26 +146,48 @@ export default function SearchableRegistryList({
     updateURL({ page })
   }
 
+  // Handle filter changes
+  const handleToggleInstallation = () => {
+    const newValue = !hasInstallation
+    setHasInstallation(newValue)
+    updateURL({ hasInstallation: newValue })
+  }
+
+  const handleToggleRemote = () => {
+    const newValue = !isRemote
+    setIsRemote(newValue)
+    updateURL({ isRemote: newValue })
+  }
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <div className="flex-1">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <div className="flex-1">
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
+          </div>
+          <div className="sm:w-48">
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                <SelectItem value="rating-desc">Most Helpful</SelectItem>
+                <SelectItem value="stars-desc">Most GitHub Stars</SelectItem>
+                <SelectItem value="date-newest">Newest</SelectItem>
+                <SelectItem value="date-oldest">Oldest</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="sm:w-48">
-          <Select value={sortBy} onValueChange={handleSortChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="alphabetical">Alphabetical</SelectItem>
-              <SelectItem value="rating-desc">Most Helpful</SelectItem>
-              <SelectItem value="stars-desc">Most GitHub Stars</SelectItem>
-              <SelectItem value="date-newest">Newest</SelectItem>
-              <SelectItem value="date-oldest">Oldest</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+        <FilterPills
+          hasInstallation={hasInstallation}
+          isRemote={isRemote}
+          onToggleInstallation={handleToggleInstallation}
+          onToggleRemote={handleToggleRemote}
+        />
       </div>
 
       <div className="space-y-6">

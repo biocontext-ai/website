@@ -3,7 +3,8 @@ import Zulip from "@/components/icons/zulip"
 import Logo from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Book, Bot, Database, Hammer, PlusCircle, Users } from "lucide-react"
+import { getRegistryMetrics } from "@/lib/registry"
+import { Book, Bot, Database, Hammer, Package, PlusCircle, Settings, Users, Wifi } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -42,10 +43,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const metrics = await getRegistryMetrics()
+
   return (
     <div className="mx-auto container px-4 py-4 sm:px-6 md:py-6">
-      <div className="flex flex-col gap-16 pb-16">
+      <div className="flex flex-col gap-8 pb-16">
         {/* Hero Section */}
         <section className="text-center space-y-8 pt-16">
           <div className="space-y-4 lg:space-y-6">
@@ -88,7 +91,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-y-8">
+        <section className="flex flex-col lg:pt-8 gap-y-8">
           <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-2xl">
@@ -126,6 +129,61 @@ export default function HomePage() {
                   </Link>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Metrics Section */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                MCP Servers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{metrics.totalServers}</div>
+              <p className="text-xs text-muted-foreground mt-1">Available in the Registry</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Tools Available
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{metrics.totalTools}</div>
+              <p className="text-xs text-muted-foreground mt-1">Across servers with mcp.json</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                With Installation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{metrics.serversWithInstallation}</div>
+              <p className="text-xs text-muted-foreground mt-1">Include mcp.json config</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Wifi className="w-4 h-4" />
+                Remote Servers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{metrics.remoteServers}</div>
+              <p className="text-xs text-muted-foreground mt-1">Network-accessible</p>
             </CardContent>
           </Card>
         </section>

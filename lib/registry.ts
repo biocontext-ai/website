@@ -180,6 +180,8 @@ export interface GetMCPServersParams {
   limit?: number
   search?: string
   sortBy?: "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
+  hasInstallation?: boolean
+  isRemote?: boolean
 }
 
 export interface PaginatedMCPServers {
@@ -195,19 +197,44 @@ export async function getPaginatedMCPServers({
   limit = 18,
   search = "",
   sortBy = "alphabetical",
+  hasInstallation,
+  isRemote,
 }: GetMCPServersParams): Promise<PaginatedMCPServers> {
   try {
     const skip = (page - 1) * limit
+
+    // Build base filter conditions
+    const baseConditions: Prisma.McpServerWhereInput[] = [
+      {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+      },
+    ]
+
+    // Add installation filter
+    if (hasInstallation !== undefined && hasInstallation) {
+      baseConditions.push({
+        installationConfig: {
+          not: Prisma.DbNull,
+        },
+      })
+    }
+
+    // Add remote filter
+    if (isRemote !== undefined && isRemote) {
+      baseConditions.push({
+        url: {
+          not: null,
+        },
+      })
+    }
 
     // Build search conditions
     const searchConditions: Prisma.McpServerWhereInput = search
       ? {
           AND: [
-            {
-              identifier: {
-                not: "example/example-mcp-server",
-              },
-            },
+            ...baseConditions,
             {
               OR: [
                 {
@@ -247,9 +274,7 @@ export async function getPaginatedMCPServers({
           ],
         }
       : {
-          identifier: {
-            not: "example/example-mcp-server",
-          },
+          AND: baseConditions,
         }
 
     // Determine sort order
@@ -269,12 +294,17 @@ export async function getPaginatedMCPServers({
       // For rating-desc, we'll sort in memory after fetching all servers
     }
 
-    // Get total count for pagination
+    // For hasInstallation filter, we need to fetch all and filter in memory
+    // because JSON field filtering has limitations
+    const needsInMemoryFilter = hasInstallation === true
+    const needsInMemoryProcessing = needsInMemorySort || needsInMemoryFilter
+
+    // Get total count for pagination (before installation filter)
     const totalCount = await prisma.mcpServer.count({
       where: searchConditions,
     })
 
-    // Fetch servers - for rating sort, fetch all; otherwise use pagination
+    // Fetch servers - for in-memory processing, fetch all; otherwise use pagination
     const servers = await prisma.mcpServer.findMany({
       where: searchConditions,
       include: {
@@ -301,8 +331,8 @@ export async function getPaginatedMCPServers({
         mcpTools: true,
       },
       orderBy,
-      // Only apply pagination at database level if we don't need in-memory sorting
-      ...(needsInMemorySort ? {} : { skip, take: limit }),
+      // Only apply pagination at database level if we don't need in-memory processing
+      ...(needsInMemoryProcessing ? {} : { skip, take: limit }),
     })
 
     // Transform servers
@@ -311,8 +341,17 @@ export async function getPaginatedMCPServers({
         ...transformPrismaToMCPServer(server),
         aggregateRating: calculateAggregateRating(server.reviews),
         githubStars: server.githubStars?.starCount,
+        installationConfig: server.installationConfig,
       }
     })
+
+    // Filter by installation config if needed (must be done after fetching due to JSON field limitations)
+    if (hasInstallation) {
+      transformedServers = transformedServers.filter((server) => {
+        const config = server.installationConfig
+        return config !== null && typeof config === "object" && Object.keys(config).length > 0
+      })
+    }
 
     // Sort in memory for rating-desc (case-insensitive)
     if (sortBy === "rating-desc") {
@@ -358,11 +397,24 @@ export async function getPaginatedMCPServers({
       })
     }
 
-    const totalPages = Math.ceil(totalCount / limit)
+    // Apply pagination if we did in-memory processing
+    if (needsInMemoryProcessing) {
+      transformedServers = transformedServers.slice(skip, skip + limit)
+    }
+
+    // Recalculate counts after filtering
+    const actualTotalBeforeSlice = needsInMemoryFilter
+      ? servers.filter((s) => {
+          const config = s.installationConfig
+          return config !== null && typeof config === "object" && Object.keys(config).length > 0
+        }).length
+      : totalCount
+
+    const totalPages = Math.ceil(actualTotalBeforeSlice / limit)
 
     return {
       servers: transformedServers,
-      totalCount,
+      totalCount: actualTotalBeforeSlice,
       totalPages,
       currentPage: page,
     }
@@ -832,4 +884,91 @@ export function filterMCPServers(
       (server.featureList && server.featureList.some((feature) => feature.toLowerCase().includes(query))) ||
       (server.programmingLanguage && server.programmingLanguage.some((lang) => lang.toLowerCase().includes(query))),
   )
+}
+
+// Get registry metrics for the home page
+export interface RegistryMetrics {
+  totalServers: number
+  totalTools: number
+  serversWithInstallation: number
+  remoteServers: number
+}
+
+export async function getRegistryMetrics(): Promise<RegistryMetrics> {
+  try {
+    // Get total count of servers (excluding example)
+    const totalServers = await prisma.mcpServer.count({
+      where: {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+      },
+    })
+
+    // Get total count of tools across all servers
+    const totalTools = await prisma.mcpServerTool.count({
+      where: {
+        mcpServer: {
+          identifier: {
+            not: "example/example-mcp-server",
+          },
+        },
+      },
+    })
+
+    // Get count of servers with installation config (mcp.json)
+    // Need to fetch and check manually since JSON field checks are limited
+    const serversWithConfig = await prisma.mcpServer.findMany({
+      where: {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+        installationConfig: {
+          not: Prisma.DbNull,
+        },
+      },
+      select: {
+        installationConfig: true,
+      },
+    })
+
+    // Filter out servers with empty or null installation configs
+    const serversWithInstallation = serversWithConfig.filter((server) => {
+      const config = server.installationConfig
+      return config !== null && typeof config === "object" && Object.keys(config).length > 0
+    }).length
+
+    // Get count of remote servers (servers with a url field)
+    const remoteServers = await prisma.mcpServer.count({
+      where: {
+        AND: [
+          {
+            identifier: {
+              not: "example/example-mcp-server",
+            },
+          },
+          {
+            url: {
+              not: null,
+            },
+          },
+        ],
+      },
+    })
+
+    return {
+      totalServers,
+      totalTools,
+      serversWithInstallation,
+      remoteServers,
+    }
+  } catch (error) {
+    console.error("Error fetching registry metrics:", error)
+    return {
+      totalServers: 0,
+      totalTools: 0,
+      serversWithInstallation: 0,
+      remoteServers: 0,
+    }
+  }
 }
