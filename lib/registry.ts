@@ -179,7 +179,7 @@ export interface GetMCPServersParams {
   page?: number
   limit?: number
   search?: string
-  sortBy?: "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
+  sortBy?: "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
   hasInstallation?: boolean
   isRemote?: boolean
 }
@@ -196,7 +196,7 @@ export async function getPaginatedMCPServers({
   page = 1,
   limit = 18,
   search = "",
-  sortBy = "alphabetical",
+  sortBy = "recommended",
   hasInstallation,
   isRemote,
 }: GetMCPServersParams): Promise<PaginatedMCPServers> {
@@ -279,7 +279,7 @@ export async function getPaginatedMCPServers({
 
     // Determine sort order
     let orderBy: Prisma.McpServerOrderByWithRelationInput[] = [{ name: "asc" }]
-    const needsInMemorySort = sortBy === "rating-desc" // Only rating needs in-memory sort
+    const needsInMemorySort = sortBy === "rating-desc" || sortBy === "recommended" // Rating and recommended need in-memory sort
 
     switch (sortBy) {
       case "stars-desc":
@@ -291,7 +291,7 @@ export async function getPaginatedMCPServers({
       case "date-oldest":
         orderBy = [{ datePublished: { sort: "asc", nulls: "last" } }]
         break
-      // For rating-desc, we'll sort in memory after fetching all servers
+      // For rating-desc and recommended, we'll sort in memory after fetching all servers
     }
 
     // For hasInstallation filter, we need to fetch all and filter in memory
@@ -364,8 +364,39 @@ export async function getPaginatedMCPServers({
         }
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
       })
-      // Apply pagination after sorting
-      transformedServers = transformedServers.slice(skip, skip + limit)
+    } else if (sortBy === "recommended") {
+      // Recommended sort: remote first, then mcp.json, then others. Within each category, sort by stars, then alphabetically
+      transformedServers.sort((a, b) => {
+        // Helper to determine server category
+        const getCategory = (server: MCPServerWithReviewSummary) => {
+          const hasRemote = !!server.url // Servers with a URL are remote servers
+          const hasInstallation =
+            server.installationConfig !== null &&
+            typeof server.installationConfig === "object" &&
+            Object.keys(server.installationConfig).length > 0
+          if (hasRemote) return 0 // Remote servers first
+          if (hasInstallation) return 1 // Servers with mcp.json second
+          return 2 // Others last
+        }
+
+        const aCategory = getCategory(a)
+        const bCategory = getCategory(b)
+
+        // Sort by category first
+        if (aCategory !== bCategory) {
+          return aCategory - bCategory
+        }
+
+        // Within same category, sort by star count
+        const aStars = a.githubStars || 0
+        const bStars = b.githubStars || 0
+        if (bStars !== aStars) {
+          return bStars - aStars
+        }
+
+        // If stars are the same, sort alphabetically (case-insensitive)
+        return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      })
     } else if (sortBy === "alphabetical") {
       // Add case-insensitive secondary sort (database sort is case-sensitive)
       transformedServers.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))

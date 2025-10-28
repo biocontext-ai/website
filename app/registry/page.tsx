@@ -22,7 +22,8 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
   const params = await searchParams
   const currentPage = Number(params.page) || 1
   const searchQuery = typeof params.search === "string" ? params.search : ""
-  const sortBy = (typeof params.sort === "string" ? params.sort : "alphabetical") as
+  const sortBy = (typeof params.sort === "string" ? params.sort : "recommended") as
+    | "recommended"
     | "alphabetical"
     | "rating-desc"
     | "stars-desc"

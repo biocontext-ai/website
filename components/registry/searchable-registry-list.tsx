@@ -21,7 +21,7 @@ import RegistryList from "./registry-list"
 import RegistrySkeleton from "./registry-skeleton"
 import SearchInput from "./search-input"
 
-type SortOption = "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
+type SortOption = "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
 
 interface SearchableRegistryListProps {
   servers: MCPServerWithReviewSummary[]
@@ -42,7 +42,7 @@ export default function SearchableRegistryList({
 
   // Initialize state from URL params
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
-  const [sortBy, setSortBy] = useState<SortOption>((searchParams.get("sort") as SortOption) || "alphabetical")
+  const [sortBy, setSortBy] = useState<SortOption>((searchParams.get("sort") as SortOption) || "recommended")
   const [hasInstallation, setHasInstallation] = useState(searchParams.get("hasInstallation") === "true")
   const [isRemote, setIsRemote] = useState(searchParams.get("isRemote") === "true")
   const [isInitialMount, setIsInitialMount] = useState(true)
@@ -69,7 +69,7 @@ export default function SearchableRegistryList({
     }
 
     if (updates.sort !== undefined) {
-      if (updates.sort !== "alphabetical") {
+      if (updates.sort !== "recommended") {
         newSearchParams.set("sort", updates.sort)
       } else {
         newSearchParams.delete("sort")
@@ -172,6 +172,7 @@ export default function SearchableRegistryList({
                 <SelectValue placeholder="Sort by..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="recommended">Recommended</SelectItem>
                 <SelectItem value="alphabetical">Alphabetical</SelectItem>
                 <SelectItem value="rating-desc">Most Helpful</SelectItem>
                 <SelectItem value="stars-desc">Most GitHub Stars</SelectItem>
