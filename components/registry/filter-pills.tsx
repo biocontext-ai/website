@@ -40,18 +40,6 @@ export default function FilterPills({
         <span>Remote</span>
         {isRemote && <X className="w-3 h-3 ml-0.5 hover:bg-primary-foreground/20 rounded-full" />}
       </Badge>
-
-      {(hasInstallation || isRemote) && (
-        <button
-          onClick={() => {
-            if (hasInstallation) onToggleInstallation()
-            if (isRemote) onToggleRemote()
-          }}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-        >
-          Clear all
-        </button>
-      )}
     </div>
   )
 }
