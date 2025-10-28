@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { MCPServerWithReviewSummary } from "@/lib/registry"
-import { Book, BookmarkIcon, Copy, ExternalLink, ThumbsUp, User, Users } from "lucide-react"
+import { Book, BookmarkIcon, Copy, ExternalLink, Settings, ThumbsUp, User, Users, Wifi } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -49,7 +49,8 @@ export default function RegistryCard({ item, children }: RegistryCardProps) {
                 variant="default"
                 className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
               >
-                Remote server
+                <Wifi className="w-3 h-3 mr-1" />
+                Remote
               </Badge>
             )}
             {item.installationConfig && (
@@ -57,6 +58,7 @@ export default function RegistryCard({ item, children }: RegistryCardProps) {
                 variant="default"
                 className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
               >
+                <Settings className="w-3 h-3 mr-1" />
                 mcp.json
               </Badge>
             )}

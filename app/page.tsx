@@ -144,7 +144,7 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{metrics.totalServers}</div>
-              <p className="text-xs text-muted-foreground mt-1">Available in registry</p>
+              <p className="text-xs text-muted-foreground mt-1">Available in the Registry</p>
             </CardContent>
           </Card>
 
@@ -157,7 +157,7 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{metrics.totalTools}</div>
-              <p className="text-xs text-muted-foreground mt-1">Across all servers with mcp.json</p>
+              <p className="text-xs text-muted-foreground mt-1">Across servers with mcp.json</p>
             </CardContent>
           </Card>
 

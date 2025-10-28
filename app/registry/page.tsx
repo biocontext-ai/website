@@ -28,12 +28,16 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
     | "stars-desc"
     | "date-newest"
     | "date-oldest"
+  const hasInstallation = params.hasInstallation === "true"
+  const isRemote = params.isRemote === "true"
 
   const paginatedData = await getPaginatedMCPServers({
     page: currentPage,
     limit: 18,
     search: searchQuery,
     sortBy,
+    hasInstallation,
+    isRemote,
   })
 
   return (
