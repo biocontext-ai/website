@@ -42,27 +42,26 @@ export default function RegistryCard({ item, children }: RegistryCardProps) {
         itemID={item["@id"]}
       >
         {/* Installation Available Indicator - Floating Badge */}
-        {item.installationConfig ||
-          (item.url && (
-            <div className="absolute -top-3 -right-3 z-10 flex gap-1">
-              {item.url && (
-                <Badge
-                  variant="default"
-                  className="text-xs bg-blue-400 hover:bg-blue-500 text-white border-2 border-white dark:border-gray-950 shadow-md"
-                >
-                  Remote server
-                </Badge>
-              )}
-              {item.installationConfig && (
-                <Badge
-                  variant="default"
-                  className="text-xs bg-blue-500 hover:bg-blue-600 text-white border-2 border-white dark:border-gray-950 shadow-md"
-                >
-                  mcp.json available
-                </Badge>
-              )}
-            </div>
-          ))}
+        {(item.installationConfig || item.url) && (
+          <div className="absolute -top-3 -right-3 z-10 flex gap-1">
+            {item.url && (
+              <Badge
+                variant="default"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
+              >
+                Remote server
+              </Badge>
+            )}
+            {item.installationConfig && (
+              <Badge
+                variant="default"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white border-2 border-white dark:border-gray-950 shadow-md"
+              >
+                mcp.json
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Additional types for enhanced semantic markup */}
         {item.additionalType?.map((type, index) => <link key={index} itemProp="additionalType" href={type} />) || (

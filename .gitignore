@@ -28,5 +28,3 @@ test-results
 .wrangler
 .open-next
 .dev.vars
-
-update-*.sh
