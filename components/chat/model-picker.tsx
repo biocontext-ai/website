@@ -1,6 +1,16 @@
 "use client"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,11 +24,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { useChatStore } from "@/stores/chat"
 import { UIMessage } from "ai"
 import { AlertTriangle, Key, X } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 import { useShallow } from "zustand/react/shallow"
 import Claude from "../icons/claude"
 import Gemini from "../icons/gemini"
@@ -121,26 +131,28 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
   const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
   const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
-  const useGoogleCommunityKey = useChatStore(useShallow((state) => state.useGoogleCommunityKey))
   const setSelectedModel = useChatStore(useShallow((state) => state.setSelectedModel))
   const setApiKeyForProvider = useChatStore(useShallow((state) => state.setApiKeyForProvider))
-  const setUseGoogleCommunityKey = useChatStore(useShallow((state) => state.setUseGoogleCommunityKey))
 
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [tempApiKey, setTempApiKey] = useState("")
   const [pendingModel, setPendingModel] = useState<string>("")
 
+  // Get the default free model to switch to
+  const defaultFreeModel = models.find((m) => m.id === "gemini-2.5-flash-latest")!
+
   const currentModel = models.find((m) => m.id === selectedModel)
 
-  // Get API key for current model
-  const apiKey = (() => {
-    if (!currentModel) return null
-    if (currentModel.provider === "openai") return openaiApiKey
-    if (currentModel.provider === "anthropic") return anthropicApiKey
-    // For Google, check if using community key
-    if (useGoogleCommunityKey) return null
+  // Get API key for current model's provider
+  const getApiKeyForProvider = (provider: "google" | "openai" | "anthropic") => {
+    if (provider === "openai") return openaiApiKey
+    if (provider === "anthropic") return anthropicApiKey
     return googleApiKey
-  })()
+  }
+
+  // Get API key for current model
+  const apiKey = currentModel ? getApiKeyForProvider(currentModel.provider) : null
 
   const handleSetSelectedModel = (modelId: string) => {
     setSelectedModel(modelId)
@@ -181,16 +193,42 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
 
     // Save the API key for the appropriate provider
     setApiKeyForProvider(targetModel.provider, tempApiKey.trim())
+
     handleSetSelectedModel(modelToUse)
     setShowApiKeyDialog(false)
     setPendingModel("")
     setTempApiKey("")
+
+    const providerName =
+      targetModel.provider === "openai" ? "OpenAI" : targetModel.provider === "google" ? "Google" : "Anthropic"
+    toast.success(`${providerName} API key ${apiKey ? "updated" : "saved"}`)
   }
 
   const removeApiKey = () => {
     if (!currentModel) return
+    // Show confirmation dialog
+    setShowRemoveDialog(true)
+  }
+
+  const confirmRemoveApiKey = () => {
+    if (!currentModel) return
+
+    const providerName =
+      currentModel.provider === "openai" ? "OpenAI" : currentModel.provider === "google" ? "Google" : "Anthropic"
+
     setApiKeyForProvider(currentModel.provider, null)
+
+    // For models that require API keys (no free option), switch to default free model
+    if (currentModel.requiresApiKey) {
+      handleSetSelectedModel(defaultFreeModel.id)
+      toast.success(`${providerName} API key removed. Switched to ${defaultFreeModel.name}.`)
+    } else {
+      // For Google models with optional keys, just remove the key and use community key
+      toast.success(`${providerName} API key removed. Using free community key.`)
+    }
+
     setTempApiKey("")
+    setShowRemoveDialog(false)
   }
 
   return (
@@ -234,52 +272,12 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
         {/* Show API key UI if model accepts keys (required or optional) */}
         {(currentModel?.requiresApiKey || currentModel?.supportsOptionalApiKey) && (
           <>
-            {currentModel?.supportsOptionalApiKey && googleApiKey ? (
-              // Google model with API key stored - show switch
-              <div className="flex items-center gap-2 ml-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="key-switch" className="text-xs text-muted-foreground cursor-pointer">
-                    Community
-                  </Label>
-                  <Switch
-                    id="key-switch"
-                    checked={!useGoogleCommunityKey}
-                    onCheckedChange={(checked) => setUseGoogleCommunityKey(!checked)}
-                    className="h-5"
-                  />
-                  <Label htmlFor="key-switch" className="text-xs text-muted-foreground cursor-pointer">
-                    My Key
-                  </Label>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setPendingModel(selectedModel)
-                    setTempApiKey("")
-                    setShowApiKeyDialog(true)
-                  }}
-                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                  title="Edit stored API key"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeApiKey}
-                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                  title="Remove API key"
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ) : apiKey ? (
-              // Using API key (non-Google or Google without stored key)
+            {apiKey ? (
+              // API key is set - show badge with edit and remove buttons
               <div className="flex items-center gap-1.5 ml-2">
                 <Badge variant="outline" className="text-xs h-6">
                   <Key className="h-3 w-3 mr-1" />
-                  Set
+                  {currentModel?.supportsOptionalApiKey ? "My Key" : "Set"}
                 </Badge>
                 <Button
                   variant="ghost"
@@ -290,7 +288,7 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                     setShowApiKeyDialog(true)
                   }}
                   className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                  title="Change API key"
+                  title="Edit API key"
                 >
                   Edit
                 </Button>
@@ -298,14 +296,14 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                   variant="ghost"
                   size="sm"
                   onClick={removeApiKey}
-                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
                   title="Remove API key"
                 >
                   <X className="size-4" />
                 </Button>
               </div>
             ) : (
-              // No key set
+              // No key set - show add button
               <Button
                 variant="outline"
                 size="sm"
@@ -446,16 +444,32 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
           </div>
 
           <DialogFooter className="flex flex-col-reverse md:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowApiKeyDialog(false)
-                setPendingModel("")
-                setTempApiKey("")
-              }}
-            >
-              {pendingModel && models.find((m) => m.id === pendingModel)?.supportsOptionalApiKey ? "Skip" : "Cancel"}
-            </Button>
+            {apiKey ? (
+              // When editing an existing key, show Remove button
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowApiKeyDialog(false)
+                  setPendingModel("")
+                  setTempApiKey("")
+                  removeApiKey()
+                }}
+              >
+                Remove API Key
+              </Button>
+            ) : (
+              // When adding a new key, show Cancel button
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowApiKeyDialog(false)
+                  setPendingModel("")
+                  setTempApiKey("")
+                }}
+              >
+                Cancel
+              </Button>
+            )}
             <Button
               onClick={() => {
                 const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
@@ -491,6 +505,52 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Remove API Key Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove API Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentModel?.supportsOptionalApiKey ? (
+                <>
+                  Are you sure you want to remove your{" "}
+                  {currentModel.provider === "openai"
+                    ? "OpenAI"
+                    : currentModel.provider === "google"
+                      ? "Google"
+                      : "Anthropic"}{" "}
+                  API key? You&apos;ll switch back to using the free community key.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to remove your{" "}
+                  {currentModel?.provider === "openai"
+                    ? "OpenAI"
+                    : currentModel?.provider === "google"
+                      ? "Google"
+                      : "Anthropic"}{" "}
+                  API key? You&apos;ll be switched to {defaultFreeModel.name}.
+                  {googleApiKey && currentModel?.provider !== "google" && (
+                    <span className="block mt-2 text-xs">
+                      Note: If you have a Google API key set, it will be used for {defaultFreeModel.name}.
+                    </span>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveApiKey}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove API Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

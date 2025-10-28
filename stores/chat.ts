@@ -29,9 +29,6 @@ export interface ChatSettings {
   openaiApiKey: string | null
   anthropicApiKey: string | null
 
-  // Whether to use community key for Google instead of user's key
-  useGoogleCommunityKey: boolean
-
   // Conversations
   conversations: Conversation[]
   currentConversationId: string | null
@@ -49,7 +46,6 @@ export interface ChatActions {
   setGoogleApiKey: (key: string | null) => void
   setOpenaiApiKey: (key: string | null) => void
   setAnthropicApiKey: (key: string | null) => void
-  setUseGoogleCommunityKey: (use: boolean) => void
   getApiKeyForModel: (modelId: string) => string | null
   setApiKeyForProvider: (provider: "google" | "openai" | "anthropic", key: string | null) => void
 
@@ -105,7 +101,6 @@ const initialState: ChatSettings = {
   googleApiKey: null,
   openaiApiKey: null,
   anthropicApiKey: null,
-  useGoogleCommunityKey: true,
   conversations: [createNewConversation()],
   currentConversationId: null,
 }
@@ -158,16 +153,10 @@ export const useChatStore = create<ChatStore>()(
           anthropicApiKey: key,
         })),
 
-      setUseGoogleCommunityKey: (use) =>
-        set(() => ({
-          useGoogleCommunityKey: use,
-        })),
-
       setApiKeyForProvider: (provider, key) =>
         set(() => {
           if (provider === "google") {
-            // When setting a Google API key, automatically switch to using it
-            return { googleApiKey: key, useGoogleCommunityKey: key === null }
+            return { googleApiKey: key }
           } else if (provider === "openai") {
             return { openaiApiKey: key }
           } else {
@@ -182,8 +171,8 @@ export const useChatStore = create<ChatStore>()(
         } else if (modelId.startsWith("claude-")) {
           return state.anthropicApiKey
         } else {
-          // For Google models, return null if using community key
-          return state.useGoogleCommunityKey ? null : state.googleApiKey
+          // For Google models, return the key (null means use community key)
+          return state.googleApiKey
         }
       },
 
@@ -315,7 +304,6 @@ export const useChatStore = create<ChatStore>()(
           googleApiKey: null,
           openaiApiKey: null,
           anthropicApiKey: null,
-          useGoogleCommunityKey: true,
           conversations: [newConversation],
           currentConversationId: newConversation.id,
         }))
@@ -330,11 +318,10 @@ export const useChatStore = create<ChatStore>()(
         googleApiKey: state.googleApiKey,
         openaiApiKey: state.openaiApiKey,
         anthropicApiKey: state.anthropicApiKey,
-        useGoogleCommunityKey: state.useGoogleCommunityKey,
         conversations: state.conversations,
         currentConversationId: state.currentConversationId,
       }),
-      version: 3,
+      version: 4,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to version 2
         if (version === 1) {
@@ -357,7 +344,6 @@ export const useChatStore = create<ChatStore>()(
             googleApiKey: null,
             openaiApiKey: null,
             anthropicApiKey: null,
-            useGoogleCommunityKey: true,
             conversations: [newConversation],
             currentConversationId: newConversation.id,
           }
@@ -380,7 +366,31 @@ export const useChatStore = create<ChatStore>()(
             googleApiKey: null,
             openaiApiKey: null,
             anthropicApiKey: null,
-            useGoogleCommunityKey: true,
+            conversations: oldState.conversations || [createNewConversation()],
+            currentConversationId: oldState.currentConversationId || null,
+          }
+        }
+
+        // Migrate from version 3 to version 4
+        if (version === 3) {
+          const oldState = persistedState as {
+            mcpServers: McpServer[]
+            selectedModel: string
+            googleApiKey: string | null
+            openaiApiKey: string | null
+            anthropicApiKey: string | null
+            useGoogleCommunityKey: boolean
+            conversations: Conversation[]
+            currentConversationId: string | null
+          }
+
+          // Remove useGoogleCommunityKey flag - presence of googleApiKey determines usage
+          return {
+            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+            googleApiKey: oldState.googleApiKey || null,
+            openaiApiKey: oldState.openaiApiKey || null,
+            anthropicApiKey: oldState.anthropicApiKey || null,
             conversations: oldState.conversations || [createNewConversation()],
             currentConversationId: oldState.currentConversationId || null,
           }
