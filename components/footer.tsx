@@ -12,7 +12,7 @@ export default function Footer() {
   return (
     show && (
       <div className="border-t">
-        <footer className="container mx-auto text-sm pt-12 pb-8 flex flex-col sm:grid grid-cols-3 justify-between gap-4">
+        <footer className="container mx-auto text-sm pt-12 pb-8 flex flex-col sm:grid grid-cols-2 md:grid-cols-4 justify-between gap-x-4 gap-y-8">
           <div className="flex flex-col gap-4">
             <h2 className="font-semibold">External Links</h2>
             <CustomLink href="https://github.com/biocontext-ai" className="flex items-center gap-x-2">
@@ -30,6 +30,11 @@ export default function Footer() {
               <Bluesky className="w-4 h-4" />
               Bluesky
             </CustomLink>
+          </div>
+          <div className="flex flex-col gap-4">
+            <h2 className="font-semibold">Partner projects</h2>
+            <CustomLink href="https://scverse.org">scverse®</CustomLink>
+            <CustomLink href="https://biocypher.org/">BioCypher</CustomLink>
           </div>
           <div className="flex flex-col gap-4">
             <h2 className="font-semibold">BioContextAI</h2>

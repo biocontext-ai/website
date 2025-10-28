@@ -833,3 +833,90 @@ export function filterMCPServers(
       (server.programmingLanguage && server.programmingLanguage.some((lang) => lang.toLowerCase().includes(query))),
   )
 }
+
+// Get registry metrics for the home page
+export interface RegistryMetrics {
+  totalServers: number
+  totalTools: number
+  serversWithInstallation: number
+  remoteServers: number
+}
+
+export async function getRegistryMetrics(): Promise<RegistryMetrics> {
+  try {
+    // Get total count of servers (excluding example)
+    const totalServers = await prisma.mcpServer.count({
+      where: {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+      },
+    })
+
+    // Get total count of tools across all servers
+    const totalTools = await prisma.mcpServerTool.count({
+      where: {
+        mcpServer: {
+          identifier: {
+            not: "example/example-mcp-server",
+          },
+        },
+      },
+    })
+
+    // Get count of servers with installation config (mcp.json)
+    // Need to fetch and check manually since JSON field checks are limited
+    const serversWithConfig = await prisma.mcpServer.findMany({
+      where: {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+        installationConfig: {
+          not: Prisma.DbNull,
+        },
+      },
+      select: {
+        installationConfig: true,
+      },
+    })
+
+    // Filter out servers with empty or null installation configs
+    const serversWithInstallation = serversWithConfig.filter((server) => {
+      const config = server.installationConfig
+      return config !== null && typeof config === "object" && Object.keys(config).length > 0
+    }).length
+
+    // Get count of remote servers (servers with a url field)
+    const remoteServers = await prisma.mcpServer.count({
+      where: {
+        AND: [
+          {
+            identifier: {
+              not: "example/example-mcp-server",
+            },
+          },
+          {
+            url: {
+              not: null,
+            },
+          },
+        ],
+      },
+    })
+
+    return {
+      totalServers,
+      totalTools,
+      serversWithInstallation,
+      remoteServers,
+    }
+  } catch (error) {
+    console.error("Error fetching registry metrics:", error)
+    return {
+      totalServers: 0,
+      totalTools: 0,
+      serversWithInstallation: 0,
+      remoteServers: 0,
+    }
+  }
+}
