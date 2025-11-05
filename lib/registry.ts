@@ -53,6 +53,13 @@ export interface MCPServerWithReviewSummary extends MCPServer {
   githubStars?: number
 }
 
+// Type for MCP server option in select dropdown
+export interface McpServerOption {
+  name: string
+  url: string
+  identifier?: string
+}
+
 // Calculate aggregate rating from reviews
 export function calculateAggregateRating(reviews: { isHelpful: boolean }[]): AggregateRating {
   if (reviews.length === 0) {
@@ -1001,5 +1008,38 @@ export async function getRegistryMetrics(): Promise<RegistryMetrics> {
       serversWithInstallation: 0,
       remoteServers: 0,
     }
+  }
+}
+
+// Get available MCP servers for dropdown/select component
+export async function getAvailableMcpServers(): Promise<McpServerOption[]> {
+  try {
+    const servers = await prisma.mcpServer.findMany({
+      where: {
+        identifier: {
+          not: "example/example-mcp-server",
+        },
+        url: {
+          not: null,
+        },
+      },
+      select: {
+        name: true,
+        url: true,
+        identifier: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    })
+
+    return servers.map((server) => ({
+      name: server.name,
+      url: server.url || "",
+      identifier: server.identifier,
+    }))
+  } catch (error) {
+    console.error("Error fetching available MCP servers:", error)
+    return []
   }
 }
