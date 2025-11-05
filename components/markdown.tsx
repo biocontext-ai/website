@@ -72,8 +72,20 @@ function cleanProblematicHtmlTags(content: string): string {
     cleanedContent = cleanedContent.replace(closeTagRegex, "")
   }
 
-  // Clean up any remaining HTML comments
+  // Security: Clean up HTML comments to prevent injection attacks
+  // Multiple passes handle various edge cases and malformed comment patterns
+  // Note: rehype-sanitize provides additional protection, but defense in depth is critical
+
+  // First pass: standard well-formed HTML comments
   cleanedContent = cleanedContent.replace(/<!--[\s\S]*?-->/g, "")
+
+  // Second pass: unclosed or malformed comments that could bypass sanitization
+  cleanedContent = cleanedContent.replace(/<!--[\s\S]*$/g, "") // Unclosed comments at end
+  cleanedContent = cleanedContent.replace(/^[\s\S]*?-->/g, "") // Comments without opening tag at start
+
+  // Third pass: remove malformed comment-like patterns
+  cleanedContent = cleanedContent.replace(/<--[^>]*>/g, "") // Single dash variants
+  cleanedContent = cleanedContent.replace(/<!-[^>]*>/g, "") // Partial opening tags
 
   // Clean up excessive whitespace that might result from tag removal
   cleanedContent = cleanedContent.replace(/\n\s*\n\s*\n/g, "\n\n")

@@ -315,7 +315,7 @@ export async function POST(req: NextRequest) {
 
         tools = { ...tools, ...serverTools }
       } catch (error) {
-        console.error(`Failed to connect to MCP server ${server.name} at ${server.url}:`, error)
+        console.error(`Failed to connect to MCP server ${String(server.name)} at ${String(server.url)}:`, error)
         // Continue with other servers even if one fails
       }
     }
