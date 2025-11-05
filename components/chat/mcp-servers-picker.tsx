@@ -10,11 +10,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useChatStore } from "@/stores/chat"
-import { AlertTriangle, Loader2, PlusCircle, Server, Trash2 } from "lucide-react"
+import { AlertTriangle, PlusCircle, Server, Trash2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -25,6 +25,12 @@ interface McpServer {
   url: string
 }
 
+interface McpServerOption {
+  name: string
+  url: string
+  identifier?: string
+}
+
 interface McpServersDialogProps {
   children: React.ReactNode
   onServersChange: (servers: McpServer[]) => void
@@ -33,10 +39,9 @@ interface McpServersDialogProps {
 
 export default function McpServersDialog({ children, onServersChange, currentServers }: McpServersDialogProps) {
   const [open, setOpen] = useState(false)
-  const [newServerName, setNewServerName] = useState("")
-  const [newServerUrl, setNewServerUrl] = useState("")
-  const [isValidating, setIsValidating] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("")
+  const [availableServers, setAvailableServers] = useState<McpServerOption[]>([])
+  const [isLoadingServers, setIsLoadingServers] = useState(true)
 
   const { data: session } = useSession()
 
@@ -49,64 +54,51 @@ export default function McpServersDialog({ children, onServersChange, currentSer
     setLocalServers(mcpServers)
   }, [mcpServers])
 
-  const validateUrl = async (url: string): Promise<{ valid: boolean; reason?: string }> => {
-    try {
-      const response = await fetch("/api/mcp/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      })
-
-      const result = await response.json()
-      return result
-    } catch (error) {
-      return { valid: false, reason: "Failed to validate URL" }
+  useEffect(() => {
+    const fetchAvailableServers = async () => {
+      try {
+        const response = await fetch("/api/mcp/servers")
+        if (!response.ok) throw new Error("Failed to fetch servers")
+        const servers = await response.json()
+        setAvailableServers(servers)
+      } catch (error) {
+        console.error("Error fetching available servers:", error)
+      } finally {
+        setIsLoadingServers(false)
+      }
     }
-  }
 
-  const handleAddServer = async () => {
-    const trimmedName = newServerName.trim()
-    const trimmedUrl = newServerUrl.trim()
+    fetchAvailableServers()
+  }, [])
 
-    if (!trimmedName || !trimmedUrl) {
-      toast.error("Both name and URL are required")
+  const handleAddServer = () => {
+    if (!selectedPresetId) {
+      toast.error("Please select a server")
       return
     }
 
-    try {
-      new URL(trimmedUrl)
-    } catch {
-      setValidationError("Please enter a valid URL format")
+    const selectedServer = availableServers.find((s) => s.url === selectedPresetId)
+    if (!selectedServer) {
+      toast.error("Selected server not found")
       return
     }
 
-    if (localServers.some((server) => server.name === trimmedName)) {
-      setValidationError("Server name already exists")
+    if (localServers.some((server) => server.url === selectedServer.url)) {
+      toast.error("This server is already added")
       return
     }
 
-    setIsValidating(true)
-    setValidationError(null)
-
-    const validation = await validateUrl(trimmedUrl)
-
-    if (!validation.valid) {
-      setValidationError(validation.reason || "Invalid MCP server URL")
-      setIsValidating(false)
-      return
+    const newServer: McpServer = {
+      name: selectedServer.name,
+      url: selectedServer.url,
     }
-
-    const newServer = { name: trimmedName, url: trimmedUrl }
     const updatedServers = [...localServers, newServer]
 
     setLocalServers(updatedServers)
     setMcpServers(updatedServers)
     onServersChange(updatedServers)
 
-    setNewServerName("")
-    setNewServerUrl("")
-    setValidationError(null)
-    setIsValidating(false)
+    setSelectedPresetId("")
 
     toast.success("Server added successfully")
   }
@@ -170,7 +162,7 @@ export default function McpServersDialog({ children, onServersChange, currentSer
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Current Servers</Label>
-              <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={isValidating}>
+              <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={isLoadingServers}>
                 Reset to Default
               </Button>
             </div>
@@ -201,59 +193,42 @@ export default function McpServersDialog({ children, onServersChange, currentSer
           <Separator />
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Add New Server</Label>
+            <Label className="text-sm font-medium">Add Server from Registry</Label>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="server-name" className="text-xs">
-                  Server Name
+                <Label htmlFor="server-select" className="text-xs">
+                  Available Servers
                 </Label>
-                <Input
-                  id="server-name"
-                  value={newServerName}
-                  onChange={(e) => setNewServerName(e.target.value)}
-                  placeholder="e.g., Custom MCP Server"
-                  className="mt-1"
-                  disabled={isValidating}
-                />
+                <Select value={selectedPresetId} onValueChange={setSelectedPresetId}>
+                  <SelectTrigger id="server-select" className="mt-1" disabled={isLoadingServers}>
+                    {selectedPresetId && availableServers.find((s) => s.url === selectedPresetId) ? (
+                      <span className="text-sm">{availableServers.find((s) => s.url === selectedPresetId)?.name}</span>
+                    ) : (
+                      <SelectValue placeholder={isLoadingServers ? "Loading servers..." : "Please select a server"} />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(() => {
+                      const selectedUrls = new Set(localServers.map((s) => s.url))
+                      const availableOptions = availableServers.filter((server) => !selectedUrls.has(server.url))
+                      if (availableOptions.length === 0 && !isLoadingServers) {
+                        return <div className="px-2 py-1.5 text-sm text-muted-foreground">No servers available</div>
+                      }
+                      return availableOptions.map((server) => (
+                        <SelectItem key={server.url} value={server.url} className="py-2">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{server.name}</span>
+                            <span className="text-xs text-muted-foreground">{server.url}</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    })()}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <Label htmlFor="server-url" className="text-xs">
-                  Server URL
-                </Label>
-                <Input
-                  id="server-url"
-                  value={newServerUrl}
-                  onChange={(e) => {
-                    setNewServerUrl(e.target.value)
-                    setValidationError(null)
-                  }}
-                  placeholder="e.g., https://example.com/mcp"
-                  className="mt-1"
-                  disabled={isValidating}
-                />
-              </div>
-              {validationError && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{validationError}</AlertDescription>
-                </Alert>
-              )}
-              <Button
-                onClick={handleAddServer}
-                disabled={!newServerName.trim() || !newServerUrl.trim() || isValidating}
-                className="w-full"
-              >
-                {isValidating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Validating...
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Server
-                  </>
-                )}
+              <Button onClick={handleAddServer} disabled={!selectedPresetId || isLoadingServers} className="w-full">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Server
               </Button>
             </div>
           </div>

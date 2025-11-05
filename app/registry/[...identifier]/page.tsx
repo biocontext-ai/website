@@ -522,7 +522,7 @@ export default async function ServerDetailPage({ params }: ServerDetailPageProps
                         {maintainer.url && <meta itemProp="url" content={maintainer.url} />}
 
                         <div className="flex-shrink-0">
-                          {maintainer.url && maintainer.url.includes("github.com/") ? (
+                          {maintainer.url && maintainer.url.startsWith("https://github.com/") ? (
                             (() => {
                               const parts = maintainer.url.split("github.com/")
                               const username = parts[1]?.split("/")[0]
