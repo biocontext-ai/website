@@ -2,6 +2,29 @@
 
 This is the website for the BioContextAI project, a community intitiative to organize and extend biomedical MCP servers. The website is based on Next.js with Auth.js authentication. It contains the BioContextAI Registry frontend, which builds on the [BioContextAI Registry repository](https://github.com/biocontext-ai/registry) and follows Schema.org ontologies. It also hosts BioContextAI Chat, a Vercel AI SDK-based chatbot with flexible MCP server functionality.
 
+## Publication
+
+You can find our Nature Biotechnology correspondence here: [https://www.nature.com/articles/s41587-025-02900-9](https://www.nature.com/articles/s41587-025-02900-9).
+
+If our work is useful to your research, please cite it as below.
+
+```bibtex
+@article{BioContext_AI_Kuehl_Schaub_2025,
+  title={BioContextAI is a community hub for agentic biomedical systems},
+  url={http://dx.doi.org/10.1038/s41587-025-02900-9},
+  urldate = {2025-11-06},
+  doi={10.1038/s41587-025-02900-9},
+  year = {2025},
+  month = nov,
+  journal={Nature Biotechnology},
+  publisher={Springer Science and Business Media LLC},
+  author={Kuehl, Malte and Schaub, Darius P. and Carli, Francesco and Heumos, Lukas and Hellmig, Malte and Fernández-Zapata, Camila and Kaiser, Nico and Schaul, Jonathan and Kulaga, Anton and Usanov, Nikolay and Koutrouli, Mikaela and Ergen, Can and Palla, Giovanni and Krebs, Christian F. and Panzer, Ulf and Bonn, Stefan and Lobentanzer, Sebastian and Saez-Rodriguez, Julio and Puelles, Victor G.},
+  year={2025},
+  month=nov,
+  language={en},
+}
+```
+
 ## Getting Started
 
 ### 1. Clone the repository and install dependencies

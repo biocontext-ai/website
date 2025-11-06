@@ -27,7 +27,7 @@ export function MainNav({ children }: { children?: React.ReactNode }) {
     { href: "/collection", title: "Collections" },
     { href: "/blog", title: "Blog" },
     { href: "https://scverse.zulipchat.com/#narrow/channel/518508", title: "Community" },
-    { href: "https://www.biorxiv.org/content/10.1101/2025.07.21.665729v1.full.pdf", title: "Publication" },
+    { href: "https://www.nature.com/articles/s41587-025-02900-9", title: "Publication" },
   ]
 
   if (isMobile) {
