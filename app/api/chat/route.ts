@@ -8,6 +8,7 @@ import { validateMcpServerUrl } from "@/lib/url-validation"
 import { isChatRequest } from "@/types/api"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createGroq } from "@ai-sdk/groq"
 import { createOpenAI } from "@ai-sdk/openai"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { convertToModelMessages, experimental_createMCPClient, stepCountIs, streamText } from "ai"
@@ -220,7 +221,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine provider and model based on parameters
-    if (model && model.startsWith("gpt-")) {
+    if (model && model.startsWith("groq-")) {
+      // Groq model requested
+      if (!key) {
+        throw new Error("API key required for Groq models")
+      }
+      provider = createGroq({
+        apiKey: key,
+      })
+      // Remove groq- prefix for actual model name
+      modelName = model.substring(5)
+    } else if (model && model.startsWith("gpt-")) {
       // OpenAI model requested
       if (!key) {
         throw new Error("API key required for OpenAI models")
