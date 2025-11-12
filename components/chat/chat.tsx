@@ -528,6 +528,68 @@ const ToolInvocationCard = ({
   )
 }
 
+// Collapsible reasoning display similar to tool invocation card
+const ReasoningCard = ({
+  text,
+  isStreaming,
+  reasoningIndex,
+}: {
+  text: string
+  isStreaming: boolean
+  reasoningIndex: number
+}) => {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Card className="relative px-4 py-0 bg-card border-border reasoning-invocation animate-in fade-in duration-300">
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value={`reasoning-${reasoningIndex}`} className="border-none">
+          <AccordionTrigger className="text-start overflow-hidden">
+            <div className="flex items-center justify-between gap-2 pe-1 w-full min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {isStreaming ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary flex-shrink-0" />
+                ) : (
+                  <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                )}
+                <div className="text-sm font-medium text-muted-foreground truncate">Reasoning</div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
+                  aria-label="Copy reasoning to clipboard"
+                  role="button"
+                >
+                  <div>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied && <span className="sr-only">Copied!</span>}
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4 pb-4">
+            <div className="prose prose-sm max-w-none">
+              <Markdown>{text}</Markdown>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </Card>
+  )
+}
+
 export default function Chat({ name: name }: { name?: string }) {
   const form = useRef<HTMLFormElement>(null)
 
@@ -537,10 +599,12 @@ export default function Chat({ name: name }: { name?: string }) {
   const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
   const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
   const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
+  const groqApiKey = useChatStore(useShallow((state) => state.groqApiKey))
   const setMcpServers = useChatStore(useShallow((state) => state.setMcpServers))
 
   // Get API key based on selected model
   const apiKey = (() => {
+    if (selectedModel.startsWith("groq-")) return groqApiKey
     if (selectedModel.startsWith("gpt-")) return openaiApiKey
     if (selectedModel.startsWith("claude-")) return anthropicApiKey
     // For Google models, return the key (null means use community key)
@@ -807,8 +871,15 @@ export default function Chat({ name: name }: { name?: string }) {
                           {m.parts?.map((part, partIndex) => (
                             <Fragment key={partIndex}>
                               {part.type === "reasoning" && (
-                                <div className="prose prose-sm animate-in fade-in duration-300">
-                                  <Markdown>{part.text}</Markdown>
+                                <div className="py-1.5">
+                                  <ReasoningCard
+                                    text={part.text}
+                                    isStreaming={
+                                      (status === "submitted" || status === "streaming") &&
+                                      partIndex === (m.parts?.length || 0) - 1
+                                    }
+                                    reasoningIndex={partIndex}
+                                  />
                                 </div>
                               )}
                               {(part.type === "dynamic-tool" ||

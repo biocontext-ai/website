@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { useChatStore } from "@/stores/chat"
 import { UIMessage } from "ai"
-import { AlertTriangle, Key, X } from "lucide-react"
+import { AlertTriangle, Key, X, Zap } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useShallow } from "zustand/react/shallow"
@@ -37,7 +37,7 @@ import OpenAI from "../icons/openai"
 interface ModelOption {
   id: string
   name: string
-  provider: "google" | "openai" | "anthropic"
+  provider: "google" | "openai" | "anthropic" | "groq"
   requiresApiKey: boolean
   supportsOptionalApiKey?: boolean
   description?: string
@@ -119,6 +119,42 @@ const models: ModelOption[] = [
     badge: "API Key Required",
     icon: <OpenAI className="h-4 w-4 mr-2" />,
   },
+  {
+    id: "groq-openai/gpt-oss-20b",
+    name: "GPT OSS 20B (Groq)",
+    provider: "groq",
+    requiresApiKey: true,
+    description: "Fast inference with Groq",
+    badge: "API Key Required",
+    icon: <Zap className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "groq-openai/gpt-oss-120b",
+    name: "GPT OSS 120B (Groq)",
+    provider: "groq",
+    requiresApiKey: true,
+    description: "Fast inference with Groq",
+    badge: "API Key Required",
+    icon: <Zap className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "groq-moonshotai/kimi-k2-instruct-0905",
+    name: "Kimi K2 instruct (Groq)",
+    provider: "groq",
+    requiresApiKey: true,
+    description: "Fast inference with Groq",
+    badge: "API Key Required",
+    icon: <Zap className="h-4 w-4 mr-2" />,
+  },
+  {
+    id: "groq-qwen/qwen3-32b",
+    name: "Qwen3-32B (Groq)",
+    provider: "groq",
+    requiresApiKey: true,
+    description: "Fast inference with Groq",
+    badge: "API Key Required",
+    icon: <Zap className="h-4 w-4 mr-2" />,
+  },
 ]
 
 type ModelPickerProps = {
@@ -131,6 +167,7 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const googleApiKey = useChatStore(useShallow((state) => state.googleApiKey))
   const openaiApiKey = useChatStore(useShallow((state) => state.openaiApiKey))
   const anthropicApiKey = useChatStore(useShallow((state) => state.anthropicApiKey))
+  const groqApiKey = useChatStore(useShallow((state) => state.groqApiKey))
   const setSelectedModel = useChatStore(useShallow((state) => state.setSelectedModel))
   const setApiKeyForProvider = useChatStore(useShallow((state) => state.setApiKeyForProvider))
 
@@ -145,9 +182,10 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const currentModel = models.find((m) => m.id === selectedModel)
 
   // Get API key for current model's provider
-  const getApiKeyForProvider = (provider: "google" | "openai" | "anthropic") => {
+  const getApiKeyForProvider = (provider: "google" | "openai" | "anthropic" | "groq") => {
     if (provider === "openai") return openaiApiKey
     if (provider === "anthropic") return anthropicApiKey
+    if (provider === "groq") return groqApiKey
     return googleApiKey
   }
 
@@ -168,6 +206,8 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
       targetApiKey = openaiApiKey
     } else if (model.provider === "anthropic") {
       targetApiKey = anthropicApiKey
+    } else if (model.provider === "groq") {
+      targetApiKey = groqApiKey
     } else {
       targetApiKey = googleApiKey
     }
@@ -200,7 +240,13 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
     setTempApiKey("")
 
     const providerName =
-      targetModel.provider === "openai" ? "OpenAI" : targetModel.provider === "google" ? "Google" : "Anthropic"
+      targetModel.provider === "openai"
+        ? "OpenAI"
+        : targetModel.provider === "google"
+          ? "Google"
+          : targetModel.provider === "groq"
+            ? "Groq"
+            : "Anthropic"
     toast.success(`${providerName} API key ${apiKey ? "updated" : "saved"}`)
   }
 
@@ -214,7 +260,13 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
     if (!currentModel) return
 
     const providerName =
-      currentModel.provider === "openai" ? "OpenAI" : currentModel.provider === "google" ? "Google" : "Anthropic"
+      currentModel.provider === "openai"
+        ? "OpenAI"
+        : currentModel.provider === "google"
+          ? "Google"
+          : currentModel.provider === "groq"
+            ? "Groq"
+            : "Anthropic"
 
     setApiKeyForProvider(currentModel.provider, null)
 
@@ -343,7 +395,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                     ? "OpenAI"
                     : targetModel?.provider === "google"
                       ? "Google"
-                      : "Anthropic"
+                      : targetModel?.provider === "groq"
+                        ? "Groq"
+                        : "Anthropic"
                 return apiKey
                   ? `Update your ${providerName} API key to continue using this model.`
                   : targetModel?.supportsOptionalApiKey
@@ -419,7 +473,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                   ? "OpenAI"
                   : targetModel?.provider === "google"
                     ? "Google"
-                    : "Anthropic"
+                    : targetModel?.provider === "groq"
+                      ? "Groq"
+                      : "Anthropic"
               })()}{" "}
               API Key
             </Label>
@@ -434,7 +490,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                   ? "sk-..."
                   : targetModel?.provider === "google"
                     ? "AIza..."
-                    : "sk-ant-..."
+                    : targetModel?.provider === "groq"
+                      ? "gsk_..."
+                      : "sk-ant-..."
               })()}
               className="font-mono"
             />
@@ -496,7 +554,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                       ? "OpenAI"
                       : targetModel?.provider === "google"
                         ? "Google"
-                        : "Anthropic"
+                        : targetModel?.provider === "groq"
+                          ? "Groq"
+                          : "Anthropic"
                   })()} ${(() => {
                     const targetModel = pendingModel ? models.find((m) => m.id === pendingModel) : currentModel
                     return targetModel?.supportsOptionalApiKey ? "API Key" : "Model"
@@ -519,7 +579,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                     ? "OpenAI"
                     : currentModel.provider === "google"
                       ? "Google"
-                      : "Anthropic"}{" "}
+                      : currentModel.provider === "groq"
+                        ? "Groq"
+                        : "Anthropic"}{" "}
                   API key? You&apos;ll switch back to using the free community key.
                 </>
               ) : (
@@ -529,7 +591,9 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
                     ? "OpenAI"
                     : currentModel?.provider === "google"
                       ? "Google"
-                      : "Anthropic"}{" "}
+                      : currentModel?.provider === "groq"
+                        ? "Groq"
+                        : "Anthropic"}{" "}
                   API key? You&apos;ll be switched to {defaultFreeModel.name}.
                   {googleApiKey && currentModel?.provider !== "google" && (
                     <span className="block mt-2 text-xs">

@@ -28,6 +28,7 @@ export interface ChatSettings {
   googleApiKey: string | null
   openaiApiKey: string | null
   anthropicApiKey: string | null
+  groqApiKey: string | null
 
   // Conversations
   conversations: Conversation[]
@@ -46,8 +47,9 @@ export interface ChatActions {
   setGoogleApiKey: (key: string | null) => void
   setOpenaiApiKey: (key: string | null) => void
   setAnthropicApiKey: (key: string | null) => void
+  setGroqApiKey: (key: string | null) => void
   getApiKeyForModel: (modelId: string) => string | null
-  setApiKeyForProvider: (provider: "google" | "openai" | "anthropic", key: string | null) => void
+  setApiKeyForProvider: (provider: "google" | "openai" | "anthropic" | "groq", key: string | null) => void
 
   // Conversation actions
   createConversation: () => string
@@ -101,6 +103,7 @@ const initialState: ChatSettings = {
   googleApiKey: null,
   openaiApiKey: null,
   anthropicApiKey: null,
+  groqApiKey: null,
   conversations: [createNewConversation()],
   currentConversationId: null,
 }
@@ -153,12 +156,19 @@ export const useChatStore = create<ChatStore>()(
           anthropicApiKey: key,
         })),
 
+      setGroqApiKey: (key) =>
+        set(() => ({
+          groqApiKey: key,
+        })),
+
       setApiKeyForProvider: (provider, key) =>
         set(() => {
           if (provider === "google") {
             return { googleApiKey: key }
           } else if (provider === "openai") {
             return { openaiApiKey: key }
+          } else if (provider === "groq") {
+            return { groqApiKey: key }
           } else {
             return { anthropicApiKey: key }
           }
@@ -166,7 +176,9 @@ export const useChatStore = create<ChatStore>()(
 
       getApiKeyForModel: (modelId) => {
         const state = get()
-        if (modelId.startsWith("gpt-")) {
+        if (modelId.startsWith("groq-")) {
+          return state.groqApiKey
+        } else if (modelId.startsWith("gpt-")) {
           return state.openaiApiKey
         } else if (modelId.startsWith("claude-")) {
           return state.anthropicApiKey
@@ -304,6 +316,7 @@ export const useChatStore = create<ChatStore>()(
           googleApiKey: null,
           openaiApiKey: null,
           anthropicApiKey: null,
+          groqApiKey: null,
           conversations: [newConversation],
           currentConversationId: newConversation.id,
         }))
@@ -318,10 +331,11 @@ export const useChatStore = create<ChatStore>()(
         googleApiKey: state.googleApiKey,
         openaiApiKey: state.openaiApiKey,
         anthropicApiKey: state.anthropicApiKey,
+        groqApiKey: state.groqApiKey,
         conversations: state.conversations,
         currentConversationId: state.currentConversationId,
       }),
-      version: 4,
+      version: 5,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to version 2
         if (version === 1) {
@@ -391,6 +405,32 @@ export const useChatStore = create<ChatStore>()(
             googleApiKey: oldState.googleApiKey || null,
             openaiApiKey: oldState.openaiApiKey || null,
             anthropicApiKey: oldState.anthropicApiKey || null,
+            groqApiKey: null,
+            conversations: oldState.conversations || [createNewConversation()],
+            currentConversationId: oldState.currentConversationId || null,
+          }
+        }
+
+        // Migrate from version 4 to version 5
+        if (version === 4) {
+          const oldState = persistedState as {
+            mcpServers: McpServer[]
+            selectedModel: string
+            googleApiKey: string | null
+            openaiApiKey: string | null
+            anthropicApiKey: string | null
+            conversations: Conversation[]
+            currentConversationId: string | null
+          }
+
+          // Add groqApiKey field
+          return {
+            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+            googleApiKey: oldState.googleApiKey || null,
+            openaiApiKey: oldState.openaiApiKey || null,
+            anthropicApiKey: oldState.anthropicApiKey || null,
+            groqApiKey: null,
             conversations: oldState.conversations || [createNewConversation()],
             currentConversationId: oldState.currentConversationId || null,
           }
