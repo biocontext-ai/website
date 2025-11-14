@@ -51,6 +51,7 @@ export interface AggregateRating {
 export interface MCPServerWithReviewSummary extends MCPServer {
   aggregateRating: AggregateRating
   githubStars?: number
+  toolCount?: number
 }
 
 // Type for MCP server option in select dropdown
@@ -186,7 +187,7 @@ export interface GetMCPServersParams {
   page?: number
   limit?: number
   search?: string
-  sortBy?: "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
+  sortBy?: "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "tools-desc" | "date-newest" | "date-oldest"
   hasInstallation?: boolean
   isRemote?: boolean
 }
@@ -286,7 +287,7 @@ export async function getPaginatedMCPServers({
 
     // Determine sort order
     let orderBy: Prisma.McpServerOrderByWithRelationInput[] = [{ name: "asc" }]
-    const needsInMemorySort = sortBy === "rating-desc" || sortBy === "recommended" // Rating and recommended need in-memory sort
+    const needsInMemorySort = sortBy === "rating-desc" || sortBy === "recommended" || sortBy === "tools-desc" // Rating, recommended, and tools need in-memory sort
 
     switch (sortBy) {
       case "stars-desc":
@@ -298,7 +299,7 @@ export async function getPaginatedMCPServers({
       case "date-oldest":
         orderBy = [{ datePublished: { sort: "asc", nulls: "last" } }]
         break
-      // For rating-desc and recommended, we'll sort in memory after fetching all servers
+      // For rating-desc, recommended, and tools-desc, we'll sort in memory after fetching all servers
     }
 
     // For hasInstallation filter, we need to fetch all and filter in memory
@@ -348,6 +349,7 @@ export async function getPaginatedMCPServers({
         ...transformPrismaToMCPServer(server),
         aggregateRating: calculateAggregateRating(server.reviews),
         githubStars: server.githubStars?.starCount,
+        toolCount: server.mcpTools.length,
         installationConfig: server.installationConfig,
       }
     })
@@ -368,6 +370,15 @@ export async function getPaginatedMCPServers({
         }
         if (b.aggregateRating.totalReviews !== a.aggregateRating.totalReviews) {
           return b.aggregateRating.totalReviews - a.aggregateRating.totalReviews
+        }
+        return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      })
+    } else if (sortBy === "tools-desc") {
+      transformedServers.sort((a, b) => {
+        const aTools = a.toolCount || 0
+        const bTools = b.toolCount || 0
+        if (bTools !== aTools) {
+          return bTools - aTools
         }
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
       })
@@ -435,18 +446,16 @@ export async function getPaginatedMCPServers({
       })
     }
 
+    // Store count after filtering but before pagination
+    const countAfterFiltering = transformedServers.length
+
     // Apply pagination if we did in-memory processing
     if (needsInMemoryProcessing) {
       transformedServers = transformedServers.slice(skip, skip + limit)
     }
 
     // Recalculate counts after filtering
-    const actualTotalBeforeSlice = needsInMemoryFilter
-      ? servers.filter((s) => {
-          const config = s.installationConfig
-          return config !== null && typeof config === "object" && Object.keys(config).length > 0
-        }).length
-      : totalCount
+    const actualTotalBeforeSlice = needsInMemoryProcessing ? countAfterFiltering : totalCount
 
     const totalPages = Math.ceil(actualTotalBeforeSlice / limit)
 
@@ -509,6 +518,7 @@ export async function getAllMCPServers(): Promise<MCPServerWithReviewSummary[]> 
           ...transformPrismaToMCPServer(simplifiedServer),
           aggregateRating: calculateAggregateRating(server.reviews),
           githubStars: server.githubStars?.starCount,
+          toolCount: server.mcpTools.length,
         }
       })
   } catch (error) {
