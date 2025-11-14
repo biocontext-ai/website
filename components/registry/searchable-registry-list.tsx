@@ -21,7 +21,14 @@ import RegistryList from "./registry-list"
 import RegistrySkeleton from "./registry-skeleton"
 import SearchInput from "./search-input"
 
-type SortOption = "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "date-newest" | "date-oldest"
+type SortOption =
+  | "recommended"
+  | "alphabetical"
+  | "rating-desc"
+  | "stars-desc"
+  | "tools-desc"
+  | "date-newest"
+  | "date-oldest"
 
 interface SearchableRegistryListProps {
   servers: MCPServerWithReviewSummary[]
@@ -176,6 +183,7 @@ export default function SearchableRegistryList({
                 <SelectItem value="alphabetical">Alphabetical</SelectItem>
                 <SelectItem value="rating-desc">Most Helpful</SelectItem>
                 <SelectItem value="stars-desc">Most GitHub Stars</SelectItem>
+                <SelectItem value="tools-desc">Most Tools</SelectItem>
                 <SelectItem value="date-newest">Newest</SelectItem>
                 <SelectItem value="date-oldest">Oldest</SelectItem>
               </SelectContent>

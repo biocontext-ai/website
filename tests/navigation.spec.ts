@@ -53,8 +53,7 @@ test.describe("Navigation and Layout", () => {
     await page.goto("/registry")
     await page.waitForLoadState("networkidle")
 
-    // Find logo or home link
-    const logoLink = page.locator('a[href="/"], a:has-text("BioContextAI"), .logo').first()
+    const logoLink = page.locator('header a[href="/"], header a:has-text("BioContextAI")').first()
 
     if ((await logoLink.count()) > 0) {
       await logoLink.click()

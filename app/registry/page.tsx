@@ -27,6 +27,7 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
     | "alphabetical"
     | "rating-desc"
     | "stars-desc"
+    | "tools-desc"
     | "date-newest"
     | "date-oldest"
   const hasInstallation = params.hasInstallation === "true"
