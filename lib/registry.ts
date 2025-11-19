@@ -114,6 +114,7 @@ export interface MCPServer {
   "operatingSystem"?: string[]
   "featureList"?: string[]
   "installationConfig"?: any
+  "tokenCount"?: number | null
 }
 
 // Transform Prisma data to MCPServer interface
@@ -179,6 +180,7 @@ export function transformPrismaToMCPServer(
     }),
     "featureList": server.features.map((f) => f.feature),
     "installationConfig": server.installationConfig,
+    "tokenCount": server.tokenCount,
   }
 }
 
@@ -383,7 +385,7 @@ export async function getPaginatedMCPServers({
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
       })
     } else if (sortBy === "recommended") {
-      // Recommended sort: remote first, then mcp.json, then others. Within each category, sort by stars, then alphabetically
+      // Recommended sort: remote first, then mcp.json, then others. Within each category, sort by tools x stars, then alphabetically
       transformedServers.sort((a, b) => {
         // Helper to determine server category
         const getCategory = (server: MCPServerWithReviewSummary) => {
@@ -405,14 +407,21 @@ export async function getPaginatedMCPServers({
           return aCategory - bCategory
         }
 
-        // Within same category, sort by star count
+        // Within same category, calculate score as tools × stars (or just stars if no tools/mcp.json)
         const aStars = a.githubStars || 0
         const bStars = b.githubStars || 0
-        if (bStars !== aStars) {
-          return bStars - aStars
+        const aTools = a.toolCount || 0
+        const bTools = b.toolCount || 0
+
+        // If server has tools, multiply by stars; otherwise just use stars
+        const aScore = aTools > 0 ? aTools * aStars : aStars
+        const bScore = bTools > 0 ? bTools * bStars : bStars
+
+        if (bScore !== aScore) {
+          return bScore - aScore
         }
 
-        // If stars are the same, sort alphabetically (case-insensitive)
+        // If scores are the same, sort alphabetically (case-insensitive)
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
       })
     } else if (sortBy === "alphabetical") {

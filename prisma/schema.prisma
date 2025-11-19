@@ -159,6 +159,7 @@ model McpServer {
   githubReadme         GitHubReadme?
   mcpTools             McpServerTool[]
   collectionItems      CollectionItem[]
+  tokenCount           Int?
 
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt

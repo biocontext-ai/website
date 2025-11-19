@@ -22,6 +22,7 @@ import {
   BookmarkIcon,
   CalendarDays,
   Code,
+  Coins,
   ExternalLink,
   FileText,
   GitBranch,
@@ -393,6 +394,17 @@ export default async function ServerDetailPage({ params }: ServerDetailPageProps
                         GitHub Stars
                       </h4>
                       <p className="text-sm font-medium">{githubStars.toLocaleString()}</p>
+                    </div>
+                  )}
+
+                  {/* Token Count */}
+                  {server.tokenCount !== undefined && server.tokenCount !== null && server.tokenCount > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1 flex items-center">
+                        <Coins className="w-4 h-4 mr-2" />
+                        Estimated Context Usage
+                      </h4>
+                      <p className="text-sm font-medium">{server.tokenCount.toLocaleString()} tokens</p>
                     </div>
                   )}
 

@@ -216,6 +216,10 @@ export async function POST(request: NextRequest) {
         // Get installation config for this server
         const installationConfig = mcpInstallConfigs[serverData.identifier] || null
 
+        // Get token count from MCP tools data
+        const serverToolsInfo = mcpToolsData[serverData.identifier]
+        const tokenCount = serverToolsInfo?.token_count ?? null
+
         // Prepare the data for database insertion/update
         const serverCreateData = {
           context: serverData["@context"],
@@ -232,6 +236,7 @@ export async function POST(request: NextRequest) {
           applicationCategory: serverData.applicationCategory as any,
           license: serverData.license || "Unknown",
           installationConfig: installationConfig,
+          tokenCount: tokenCount,
           updatedAt: new Date(),
         }
 
