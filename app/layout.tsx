@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { env } from "@/lib/env"
 import type { Metadata, Viewport } from "next"
 import localFont from "next/font/local"
+import { Suspense } from "react"
 import "./globals.css"
 
 const inter = localFont({
@@ -78,22 +79,6 @@ export const viewport: Viewport = {
 }
 
 export default async function RootLayout({ children }: React.PropsWithChildren) {
-  const session = await auth()
-
-  // Filter out sensitive data before passing to client
-  let clientSession = null
-  if (session?.user) {
-    clientSession = {
-      ...session,
-      user: {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image,
-      },
-    }
-  }
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -119,16 +104,40 @@ export default async function RootLayout({ children }: React.PropsWithChildren) 
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <Providers session={clientSession}>
-            <div className="flex h-full min-h-screen w-full flex-col justify-between">
-              <Header className="sticky top-0 z-50" />
-              <main className="w-full flex-auto">{children}</main>
-              <Footer />
-              <CookieNotice />
-            </div>
-          </Providers>
+          <Suspense fallback={null}>
+            <SessionProvider>{children}</SessionProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
+  )
+}
+
+async function SessionProvider({ children }: React.PropsWithChildren) {
+  const session = await auth()
+
+  // Filter out sensitive data before passing to client
+  let clientSession = null
+  if (session?.user) {
+    clientSession = {
+      ...session,
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+      },
+    }
+  }
+
+  return (
+    <Providers session={clientSession}>
+      <div className="flex h-full min-h-screen w-full flex-col justify-between">
+        <Header className="sticky top-0 z-50" />
+        <main className="w-full flex-auto">{children}</main>
+        <Footer />
+        <CookieNotice />
+      </div>
+    </Providers>
   )
 }
