@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getRegistryMetrics } from "@/lib/registry"
 import { Book, Bot, Database, Hammer, Package, PlusCircle, Settings, Users, Wifi } from "lucide-react"
 import type { Metadata } from "next"
+import { cacheLife, cacheTag } from "next/cache"
 import Link from "next/link"
 
 export const metadata: Metadata = {
@@ -44,6 +45,10 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
+  "use cache"
+  cacheLife("hours")
+  cacheTag("registry:metrics")
+
   const metrics = await getRegistryMetrics()
 
   return (

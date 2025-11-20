@@ -9,6 +9,7 @@ import {
 } from "@/lib/blog"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { getRequestContext, logger } from "@/lib/monitoring"
+import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -88,6 +89,10 @@ export const POST = createAuthHandler(async (request: NextRequest, user) => {
     const blogPost = await createBlogPost(blogPostData)
 
     logger.info("Blog post created", { blogPostId: blogPost.id, userId: user.id })
+
+    // Invalidate blog caches
+    revalidateTag("blog:list")
+    revalidateTag("blog:post")
 
     return createSuccessResponse(
       {

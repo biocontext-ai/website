@@ -1,6 +1,8 @@
 import SearchableRegistryList from "@/components/registry/searchable-registry-list"
 import { getPaginatedMCPServers } from "@/lib/registry"
 import type { Metadata } from "next"
+import { cacheLife, cacheTag } from "next/cache"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "MCP Server Registry | BioContextAI",
@@ -18,6 +20,46 @@ interface RegistryPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+async function RegistryContent({
+  page,
+  search,
+  sortBy,
+  hasInstallation,
+  isRemote,
+}: {
+  page: number
+  search: string
+  sortBy: "recommended" | "alphabetical" | "rating-desc" | "stars-desc" | "tools-desc" | "date-newest" | "date-oldest"
+  hasInstallation: boolean
+  isRemote: boolean
+}) {
+  "use cache"
+  cacheLife("minutes")
+  cacheTag("registry:list")
+
+  const paginatedData = await getPaginatedMCPServers({
+    page,
+    limit: 18,
+    search,
+    sortBy,
+    hasInstallation,
+    isRemote,
+  })
+
+  return (
+    <div itemScope itemType="https://schema.org/ItemList" itemProp="mainEntity">
+      <meta itemProp="numberOfItems" content={paginatedData.totalCount.toString()} />
+      <meta itemProp="name" content="BioContextAI MCP Server Registry" />
+      <SearchableRegistryList
+        servers={paginatedData.servers}
+        totalCount={paginatedData.totalCount}
+        totalPages={paginatedData.totalPages}
+        currentPage={paginatedData.currentPage}
+      />
+    </div>
+  )
+}
+
 export default async function RegistryPage({ searchParams }: RegistryPageProps) {
   const params = await searchParams
   const currentPage = Number(params.page) || 1
@@ -32,15 +74,6 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
     | "date-oldest"
   const hasInstallation = params.hasInstallation === "true"
   const isRemote = params.isRemote === "true"
-
-  const paginatedData = await getPaginatedMCPServers({
-    page: currentPage,
-    limit: 18,
-    search: searchQuery,
-    sortBy,
-    hasInstallation,
-    isRemote,
-  })
 
   return (
     <div className="container mx-auto px-4 py-8" itemScope itemType="https://schema.org/WebPage">
@@ -64,16 +97,21 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
           </div>
         </div>
 
-        <div itemScope itemType="https://schema.org/ItemList" itemProp="mainEntity">
-          <meta itemProp="numberOfItems" content={paginatedData.totalCount.toString()} />
-          <meta itemProp="name" content="BioContextAI MCP Server Registry" />
-          <SearchableRegistryList
-            servers={paginatedData.servers}
-            totalCount={paginatedData.totalCount}
-            totalPages={paginatedData.totalPages}
-            currentPage={paginatedData.currentPage}
+        <Suspense
+          fallback={
+            <div className="animate-pulse space-y-4">
+              <div className="h-64 bg-muted rounded" />
+            </div>
+          }
+        >
+          <RegistryContent
+            page={currentPage}
+            search={searchQuery}
+            sortBy={sortBy}
+            hasInstallation={hasInstallation}
+            isRemote={isRemote}
           />
-        </div>
+        </Suspense>
       </div>
     </div>
   )

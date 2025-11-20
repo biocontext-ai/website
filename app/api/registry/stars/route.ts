@@ -2,6 +2,7 @@ import { isCronRequest } from "@/lib/cron"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { prisma } from "@/lib/prisma"
 import { Octokit } from "@octokit/rest"
+import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 const octokit = new Octokit({
@@ -207,6 +208,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("GitHub data update job completed:", summary)
+
+    // Invalidate registry caches when stars/readme data changes
+    if (starsUpdatedCount > 0 || readmeUpdatedCount > 0) {
+      revalidateTag("registry:list")
+      revalidateTag("registry:server")
+    }
 
     return createSuccessResponse({
       success: true,

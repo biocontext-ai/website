@@ -2,6 +2,7 @@ import { createAuthHandler, getOptionalAuth } from "@/lib/auth"
 import { deleteBlogPost, getBlogPostById, updateBlogPost, type UpdateBlogPostData } from "@/lib/blog"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { logger } from "@/lib/monitoring"
+import { revalidateTag } from "next/cache"
 import { NextRequest } from "next/server"
 import { z } from "zod"
 
@@ -60,6 +61,11 @@ export const PUT = createAuthHandler(
       const updatedPost = await updateBlogPost(urlParams.id, validatedData)
 
       logger.info("Updated blog post", { userId: user.id, blogPostId: urlParams.id })
+
+      // Invalidate blog caches
+      revalidateTag("blog:list")
+      revalidateTag("blog:post")
+
       return createSuccessResponse({
         message: "Blog post updated successfully",
         blogPost: updatedPost,
@@ -91,6 +97,11 @@ export const DELETE = createAuthHandler(
       await deleteBlogPost(urlParams.id)
 
       logger.info("Deleted blog post", { userId: user.id, blogPostId: urlParams.id })
+
+      // Invalidate blog caches
+      revalidateTag("blog:list")
+      revalidateTag("blog:post")
+
       return createSuccessResponse({
         message: "Blog post deleted successfully",
       })

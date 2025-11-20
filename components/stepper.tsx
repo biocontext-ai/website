@@ -28,18 +28,18 @@ export type StepperDefineProps<Steps extends Stepperize.Step[]> = Omit<Stepperiz
         StepperConfigProps & {
           children: React.ReactNode | ((props: { methods: Stepperize.Stepper<Steps> }) => React.ReactNode)
         },
-    ) => React.ReactElement
-    Navigation: (props: React.ComponentProps<"nav">) => React.ReactElement
+    ) => React.ReactElement<any>
+    Navigation: (props: React.ComponentProps<"nav">) => React.ReactElement<any>
     Step: (
       props: React.ComponentProps<"button"> & {
         of: Stepperize.Get.Id<Steps>
         icon?: React.ReactNode
       },
-    ) => React.ReactElement
-    Title: (props: AsChildProps<"h4">) => React.ReactElement
-    Description: (props: AsChildProps<"p">) => React.ReactElement
-    Panel: (props: AsChildProps<"div">) => React.ReactElement
-    Controls: (props: AsChildProps<"div">) => React.ReactElement
+    ) => React.ReactElement<any>
+    Title: (props: AsChildProps<"h4">) => React.ReactElement<any>
+    Description: (props: AsChildProps<"p">) => React.ReactElement<any>
+    Panel: (props: AsChildProps<"div">) => React.ReactElement<any>
+    Controls: (props: AsChildProps<"div">) => React.ReactElement<any>
   }
 }
 
@@ -226,7 +226,13 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
         const { tracking } = useStepperProvider()
 
         return (
-          <Comp date-component="stepper-step-panel" ref={(node) => scrollIntoStepperPanel(node, tracking)} {...props}>
+          <Comp
+            date-component="stepper-step-panel"
+            ref={(node) => {
+              scrollIntoStepperPanel(node, tracking)
+            }}
+            {...props}
+          >
             {children}
           </Comp>
         )

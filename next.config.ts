@@ -1,9 +1,5 @@
 import createMDX from "@next/mdx"
 import { NextConfig } from "next"
-import rehypeExternalLinks from "rehype-external-links"
-import remarkBreaks from "remark-breaks"
-import remarkGfm from "remark-gfm"
-import remarkSubSuper from "remark-supersub"
 
 const ContentSecurityPolicy = `
   default-src 'none';
@@ -67,8 +63,10 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
   trailingSlash: false,
+  reactCompiler: true,
   outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
@@ -136,10 +134,10 @@ const nextConfig: NextConfig = {
 const withMDX = createMDX({
   extension: /\.(md|mdx)$/,
   options: {
-    remarkPlugins: [remarkBreaks, remarkSubSuper, [remarkGfm, { singleTilde: false }]],
+    remarkPlugins: ["remark-breaks", "remark-supersub", ["remark-gfm", { singleTilde: false }]],
     rehypePlugins: [
       [
-        rehypeExternalLinks,
+        "rehype-external-links",
         {
           target: "_blank",
           rel: ["noopener", "noreferrer"],
