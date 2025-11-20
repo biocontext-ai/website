@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { TabsContent } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cacheLife, cacheTag } from "next/cache"
 import { isUserAdmin } from "@/lib/auth"
 import { getMCPServerWithReviews, hasUserReviewed } from "@/lib/registry"
 import {
@@ -69,10 +70,18 @@ type Props = {
   params: Promise<{ identifier: string[] }>
 }
 
+async function getCachedServerData(identifier: string) {
+  'use cache'
+  cacheLife('hours')
+  cacheTag('registry:server')
+
+  return getMCPServerWithReviews(identifier)
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const urlParams = await params
   const identifier = urlParams.identifier.join("/")
-  const result = await getMCPServerWithReviews(identifier)
+  const result = await getCachedServerData(identifier)
 
   if (!result) {
     return {
@@ -98,7 +107,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ServerDetailPage({ params }: ServerDetailPageProps) {
   const urlParams = await params
   const identifier = urlParams.identifier.join("/")
-  const result = await getMCPServerWithReviews(identifier)
+  const result = await getCachedServerData(identifier)
 
   if (!result) {
     notFound()

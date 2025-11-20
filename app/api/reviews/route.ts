@@ -3,6 +3,7 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling
 import { getRequestContext, logger } from "@/lib/monitoring"
 import { checkUserRateLimit, createRateLimitError, RATE_LIMITS } from "@/lib/rate-limiting"
 import { addReview, deleteReview, hasUserReviewed, updateReview } from "@/lib/registry"
+import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -57,6 +58,11 @@ export const POST = createAuthHandler(async (request: NextRequest, user) => {
       logger.info("Review created", { reviewId: review.id, userId: user.id })
     }
 
+    // Invalidate registry caches when reviews change
+    revalidateTag("registry:list")
+    revalidateTag("registry:server")
+    revalidateTag("registry:metrics")
+
     return createSuccessResponse(
       {
         message: isUpdate ? "Review updated successfully" : "Review submitted for approval",
@@ -94,6 +100,11 @@ export const DELETE = createAuthHandler(async (request: NextRequest, user) => {
     // Delete the review
     await deleteReview(reviewId, user.id)
     logger.info("Review deleted", { reviewId, userId: user.id })
+
+    // Invalidate registry caches when reviews change
+    revalidateTag("registry:list")
+    revalidateTag("registry:server")
+    revalidateTag("registry:metrics")
 
     return createSuccessResponse({
       message: "Review deleted successfully",

@@ -10,6 +10,7 @@ import { getBlogPostBySlug, getRelatedBlogPosts } from "@/lib/blog"
 import { format } from "date-fns"
 import { ArrowLeft, CalendarDays, Clock, Edit, Tag, User } from "lucide-react"
 import { Metadata } from "next"
+import { cacheLife, cacheTag } from "next/cache"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -19,11 +20,27 @@ interface BlogPostPageProps {
   }>
 }
 
+async function getCachedBlogPost(slug: string, isAdmin: boolean) {
+  "use cache"
+  cacheLife("hours")
+  cacheTag("blog:post")
+
+  return getBlogPostBySlug(slug, isAdmin)
+}
+
+async function getCachedRelatedPosts(postId: string, keywords: string[], limit: number) {
+  "use cache"
+  cacheLife("hours")
+  cacheTag("blog:post")
+
+  return getRelatedBlogPosts(postId, keywords, limit)
+}
+
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params
   const session = await auth()
   const isAdmin = session?.user?.id ? await isUserAdmin(session.user.id) : false
-  const post = await getBlogPostBySlug(slug, isAdmin)
+  const post = await getCachedBlogPost(slug, isAdmin)
 
   if (!post) {
     return {
@@ -51,7 +68,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 async function RelatedPosts({ currentPostId, keywords }: { currentPostId: string; keywords: string[] }) {
-  const relatedPosts = await getRelatedBlogPosts(currentPostId, keywords, 3)
+  const relatedPosts = await getCachedRelatedPosts(currentPostId, keywords, 3)
 
   if (relatedPosts.length === 0) {
     return null
@@ -109,7 +126,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const session = await auth()
   const isAdmin = session?.user?.id ? await isUserAdmin(session.user.id) : false
 
-  const post = await getBlogPostBySlug(slug, isAdmin)
+  const post = await getCachedBlogPost(slug, isAdmin)
 
   if (!post) {
     notFound()

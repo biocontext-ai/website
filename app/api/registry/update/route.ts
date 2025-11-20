@@ -7,6 +7,7 @@ import { sendStreamMessage } from "@/lib/zulip"
 import { RegistryUpdateResult } from "@/types/api"
 import { ApplicationCategory } from "@prisma/client/index"
 import { validate } from "jsonschema"
+import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 // Define the interface for the MCP server data structure
@@ -437,6 +438,11 @@ export async function POST(request: NextRequest) {
         await new Promise((resolve) => setTimeout(resolve, 1000)) // 1 second delay
       }
     }
+
+    // Invalidate all registry-related caches
+    revalidateTag("registry:list")
+    revalidateTag("registry:server")
+    revalidateTag("registry:metrics")
 
     return createSuccessResponse({
       message: "Registry update completed",

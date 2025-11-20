@@ -18,6 +18,7 @@ import { getBlogPosts } from "@/lib/blog"
 import { format } from "date-fns"
 import { CalendarDays, Clock, Edit, PlusCircle, User } from "lucide-react"
 import type { Metadata } from "next"
+import { cacheLife, cacheTag } from "next/cache"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -47,6 +48,17 @@ interface BlogPageSearchParams {
   search?: string
 }
 
+async function getCachedBlogPosts(
+  filters: Parameters<typeof getBlogPosts>[0],
+  pagination: Parameters<typeof getBlogPosts>[1],
+) {
+  "use cache"
+  cacheLife("hours")
+  cacheTag("blog:list")
+
+  return getBlogPosts(filters, pagination)
+}
+
 function BlogPostsSkeleton() {
   return (
     <div className="space-y-6">
@@ -73,7 +85,7 @@ async function BlogPostsList({ page, search }: { page: number; search?: string }
   const session = await auth()
   const isAdmin = session?.user?.id ? await isUserAdmin(session.user.id) : false
 
-  const result = await getBlogPosts(
+  const result = await getCachedBlogPosts(
     {
       published: !isAdmin ? true : undefined,
       search,

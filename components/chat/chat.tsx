@@ -33,7 +33,7 @@ const MessageCard = ({
   onRegenerateFromHere,
 }: {
   user: string
-  message: ReactElement
+  message: ReactElement<any>
   rawContent?: string
   messageId: string
   onDelete?: () => void

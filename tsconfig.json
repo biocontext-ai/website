@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2024",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,7 +16,7 @@
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -20,8 +24,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "auth": ["./auth"]
+      "@/*": [
+        "./*"
+      ],
+      "auth": [
+        "./auth"
+      ]
     }
   },
   "include": [
@@ -30,7 +38,10 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/legal/notice/page.mdx"
+    "app/legal/notice/page.mdx",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
