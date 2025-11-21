@@ -3,7 +3,7 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling
 import { prisma } from "@/lib/prisma"
 import { Octokit } from "@octokit/rest"
 import { revalidateTag } from "next/cache"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -41,6 +41,7 @@ function shouldUpdateData(lastChecked: Date | null): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  await connection()
   try {
     // Verify this is an internal request (you might want to add authentication)
     if (!isCronRequest(request)) {
@@ -211,8 +212,8 @@ export async function GET(request: NextRequest) {
 
     // Invalidate registry caches when stars/readme data changes
     if (starsUpdatedCount > 0 || readmeUpdatedCount > 0) {
-      revalidateTag("registry:list")
-      revalidateTag("registry:server")
+      revalidateTag("registry:list", "max")
+      revalidateTag("registry:server", "max")
     }
 
     return createSuccessResponse({

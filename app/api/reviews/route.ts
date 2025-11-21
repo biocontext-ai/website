@@ -59,9 +59,9 @@ export const POST = createAuthHandler(async (request: NextRequest, user) => {
     }
 
     // Invalidate registry caches when reviews change
-    revalidateTag("registry:list")
-    revalidateTag("registry:server")
-    revalidateTag("registry:metrics")
+    revalidateTag("registry:list", "max")
+    revalidateTag("registry:server", "max")
+    revalidateTag("registry:metrics", "max")
 
     return createSuccessResponse(
       {
@@ -102,9 +102,9 @@ export const DELETE = createAuthHandler(async (request: NextRequest, user) => {
     logger.info("Review deleted", { reviewId, userId: user.id })
 
     // Invalidate registry caches when reviews change
-    revalidateTag("registry:list")
-    revalidateTag("registry:server")
-    revalidateTag("registry:metrics")
+    revalidateTag("registry:list", "max")
+    revalidateTag("registry:server", "max")
+    revalidateTag("registry:metrics", "max")
 
     return createSuccessResponse({
       message: "Review deleted successfully",

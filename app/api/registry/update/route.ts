@@ -8,7 +8,7 @@ import { RegistryUpdateResult } from "@/types/api"
 import { ApplicationCategory } from "@prisma/client/index"
 import { validate } from "jsonschema"
 import { revalidateTag } from "next/cache"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 
 // Define the interface for the MCP server data structure
 interface McpServerData {
@@ -140,6 +140,9 @@ function validateEcosystemData(data: any[]): { valid: boolean; errors: string[] 
 }
 
 export async function POST(request: NextRequest) {
+  // Explicitly defer to request time for external API calls
+  await connection()
+
   logger.apiRequest("POST", "/api/registry/update")
 
   // Verify this is an authenticated cron request
@@ -440,9 +443,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Invalidate all registry-related caches
-    revalidateTag("registry:list")
-    revalidateTag("registry:server")
-    revalidateTag("registry:metrics")
+    revalidateTag("registry:list", "max")
+    revalidateTag("registry:server", "max")
+    revalidateTag("registry:metrics", "max")
 
     return createSuccessResponse({
       message: "Registry update completed",

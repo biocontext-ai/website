@@ -1,5 +1,6 @@
 import "@/node_modules/rehype-github-alerts/dist/styling/css/index.css"
 import { defaultSchema } from "hast-util-sanitize"
+import { StaticImport } from "next/dist/shared/lib/get-img-props"
 import Image from "next/image"
 import ReactMarkdown from "react-markdown"
 import rehypeExternalLinks from "rehype-external-links"
@@ -271,7 +272,7 @@ const Markdown = (props: MarkdownProps) => {
             if (hasCustomDimensions) {
               return (
                 <Image
-                  src={src}
+                  src={src as string | StaticImport}
                   alt={alt}
                   width={width || 640}
                   height={height || 400}

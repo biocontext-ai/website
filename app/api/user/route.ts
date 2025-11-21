@@ -1,5 +1,5 @@
 import { createAuthHandler, getAllUsers } from "@/lib/auth"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 // Search query validation schema
@@ -30,6 +30,7 @@ const userSearchSchema = z.object({
 // GET /api/user - List all users with pagination (admin only)
 export const GET = createAuthHandler(
   async (request: NextRequest) => {
+    await connection()
     try {
       const { searchParams } = new URL(request.url)
 

@@ -3,7 +3,7 @@ import { deleteBlogPost, getBlogPostById, updateBlogPost, type UpdateBlogPostDat
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { logger } from "@/lib/monitoring"
 import { revalidateTag } from "next/cache"
-import { NextRequest } from "next/server"
+import { connection, NextRequest } from "next/server"
 import { z } from "zod"
 
 // Validation schema for blog post updates
@@ -19,6 +19,7 @@ const updateBlogPostSchema = z.object({
 
 // GET /api/blog/[id] - Get a single blog post
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  await connection()
   logger.apiRequest("GET", "/api/blog/[id]")
 
   try {
@@ -63,8 +64,8 @@ export const PUT = createAuthHandler(
       logger.info("Updated blog post", { userId: user.id, blogPostId: urlParams.id })
 
       // Invalidate blog caches
-      revalidateTag("blog:list")
-      revalidateTag("blog:post")
+      revalidateTag("blog:list", "max")
+      revalidateTag("blog:post", "max")
 
       return createSuccessResponse({
         message: "Blog post updated successfully",
@@ -99,8 +100,8 @@ export const DELETE = createAuthHandler(
       logger.info("Deleted blog post", { userId: user.id, blogPostId: urlParams.id })
 
       // Invalidate blog caches
-      revalidateTag("blog:list")
-      revalidateTag("blog:post")
+      revalidateTag("blog:list", "max")
+      revalidateTag("blog:post", "max")
 
       return createSuccessResponse({
         message: "Blog post deleted successfully",

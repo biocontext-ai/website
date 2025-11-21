@@ -120,11 +120,12 @@ export const logger = new Logger()
 // Middleware to extract request context
 export function getRequestContext(request: Request): LogContext {
   const url = new URL(request.url)
+  const requestHeaders = request.headers
   return {
     method: request.method,
     endpoint: url.pathname,
-    ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
-    userAgent: request.headers.get("user-agent") || "unknown",
+    ip: requestHeaders.get("x-forwarded-for") || requestHeaders.get("x-real-ip") || "unknown",
+    userAgent: requestHeaders.get("user-agent") || "unknown",
     requestId: crypto.randomUUID(),
   }
 }

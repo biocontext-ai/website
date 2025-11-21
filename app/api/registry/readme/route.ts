@@ -2,7 +2,7 @@ import { isCronRequest } from "@/lib/cron"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { prisma } from "@/lib/prisma"
 import { Octokit } from "@octokit/rest"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -40,6 +40,9 @@ function shouldUpdateReadme(lastChecked: Date | null): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  // Explicitly defer to request time for external API calls
+  await connection()
+
   try {
     // Verify this is an internal request (you might want to add authentication)
     if (!isCronRequest(request)) {
