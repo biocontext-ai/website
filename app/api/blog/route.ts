@@ -10,7 +10,7 @@ import {
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { getRequestContext, logger } from "@/lib/monitoring"
 import { revalidateTag } from "next/cache"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 // Validation schema for blog post creation
@@ -26,6 +26,7 @@ const createBlogPostSchema = z.object({
 
 // GET /api/blog - Fetch blog posts with pagination and filtering
 export async function GET(request: NextRequest) {
+  await connection()
   try {
     const { searchParams } = new URL(request.url)
 
@@ -91,8 +92,8 @@ export const POST = createAuthHandler(async (request: NextRequest, user) => {
     logger.info("Blog post created", { blogPostId: blogPost.id, userId: user.id })
 
     // Invalidate blog caches
-    revalidateTag("blog:list")
-    revalidateTag("blog:post")
+    revalidateTag("blog:list", "max")
+    revalidateTag("blog:post", "max")
 
     return createSuccessResponse(
       {

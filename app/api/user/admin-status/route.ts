@@ -1,9 +1,10 @@
 import { getOptionalAuth, isUserAdmin } from "@/lib/auth"
 import { createSuccessResponse } from "@/lib/error-handling"
 import { logger } from "@/lib/monitoring"
-import { NextRequest } from "next/server"
+import { connection, NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
+  await connection()
   logger.apiRequest("GET", "/api/user/admin-status")
 
   try {

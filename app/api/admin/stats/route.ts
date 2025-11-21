@@ -3,7 +3,7 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling
 import { getRequestContext, logger } from "@/lib/monitoring"
 import { prisma } from "@/lib/prisma"
 import { McpServerStats, PeriodStats, StatsResponse } from "@/types/api"
-import { NextRequest } from "next/server"
+import { connection, NextRequest } from "next/server"
 
 async function getStatsForPeriod(daysAgo: number): Promise<PeriodStats> {
   const startDate = new Date()
@@ -130,6 +130,7 @@ async function getStatsForPeriod(daysAgo: number): Promise<PeriodStats> {
 }
 
 export const GET = createAuthHandler(async (request: NextRequest, user) => {
+  await connection()
   const context = getRequestContext(request)
   logger.apiRequest("GET", "/api/admin/stats", { ...context, userId: user.id })
 

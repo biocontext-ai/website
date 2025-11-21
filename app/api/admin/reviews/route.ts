@@ -2,7 +2,7 @@ import { createAuthHandler } from "@/lib/auth"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { getRequestContext, logger } from "@/lib/monitoring"
 import { approveReview, deleteReviewAndBlockUser, getPendingReviews } from "@/lib/registry"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 // Validation schema for review approval actions
@@ -14,6 +14,7 @@ const reviewApprovalSchema = z.object({
 // GET /api/admin/reviews - Get all pending reviews (admin only)
 export const GET = createAuthHandler(
   async (request: NextRequest, user) => {
+    await connection()
     const context = getRequestContext(request)
     logger.apiRequest("GET", "/api/admin/reviews", { ...context, userId: user.id })
 

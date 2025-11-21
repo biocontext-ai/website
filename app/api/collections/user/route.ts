@@ -2,9 +2,10 @@ import { createAuthHandler } from "@/lib/auth"
 import { getUserCollections } from "@/lib/collections"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { logger } from "@/lib/monitoring"
-import { NextRequest } from "next/server"
+import { connection, NextRequest } from "next/server"
 
 export const GET = createAuthHandler(async (request: NextRequest, user) => {
+  await connection()
   logger.apiRequest("GET", "/api/collections/user")
 
   try {

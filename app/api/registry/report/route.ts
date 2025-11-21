@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
       rateLimitResult = await checkUserRateLimit(userId, RATE_LIMITS.REPORTS_AUTHENTICATED)
     } else {
       // Unauthenticated users get stricter limit based on IP
-      const ipAddress = getClientIp(request)
+      const ipAddress = await getClientIp(request)
       rateLimitResult = await checkIpRateLimit(ipAddress, RATE_LIMITS.REPORTS_UNAUTHENTICATED)
     }
 
     if (!rateLimitResult.allowed) {
       logger.warn("Report rate limit exceeded", {
         userId: userId || "unauthenticated",
-        ip: getClientIp(request),
+        ip: await getClientIp(request),
         ...rateLimitResult,
       })
       return createRateLimitError(rateLimitResult)
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       serverId: server.id,
       identifier: decodedIdentifier,
       userId: userId || "unauthenticated",
-      ip: getClientIp(request),
+      ip: await getClientIp(request),
     })
 
     return createSuccessResponse({

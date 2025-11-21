@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { headers } from "next/headers"
 import { NextRequest } from "next/server"
 import "server-only"
 
@@ -48,15 +49,16 @@ export const RATE_LIMITS = {
  * Extract IP address from request headers
  * Checks common headers set by proxies and load balancers
  */
-export function getClientIp(request: NextRequest): string {
+export async function getClientIp(request: NextRequest): Promise<string> {
   // Try to get real IP from various headers
-  const forwardedFor = request.headers.get("x-forwarded-for")
+  const requestHeaders = await headers()
+  const forwardedFor = requestHeaders.get("x-forwarded-for")
   if (forwardedFor) {
     // x-forwarded-for can contain multiple IPs, take the first one
     return forwardedFor.split(",")[0].trim()
   }
 
-  const realIp = request.headers.get("x-real-ip")
+  const realIp = requestHeaders.get("x-real-ip")
   if (realIp) {
     return realIp
   }
@@ -265,7 +267,7 @@ export async function checkRateLimit(
     return checkUserRateLimit(userId, config)
   }
 
-  const ipAddress = getClientIp(request)
+  const ipAddress = await getClientIp(request)
   if (ipAddress === "unknown") {
     // If we can't determine IP, apply stricter limits
     return {

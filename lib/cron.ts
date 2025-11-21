@@ -3,6 +3,7 @@ import { NextRequest } from "next/server"
 
 import { checkIpRateLimit, getClientIp, RateLimitConfig } from "@/lib/rate-limiting"
 import { logSecurityEventFromRequest, SecurityEventType } from "@/lib/security-events"
+import { headers } from "next/headers"
 
 const CRON_RATE_LIMIT: RateLimitConfig = {
   windowMs: 60 * 1000,
@@ -16,8 +17,8 @@ const CRON_DAILY_RATE_LIMIT: RateLimitConfig = {
   resourceType: "cron-daily",
 }
 
-export function isCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization")
+export async function isCronRequest(request: NextRequest): Promise<boolean> {
+  const authHeader = (await headers()).get("authorization")
   const expectedToken = process.env.CRON_SECRET
 
   if (!expectedToken || !authHeader) {
@@ -46,16 +47,18 @@ export function isCronRequest(request: NextRequest): boolean {
 }
 
 export async function verifyCronRequest(request: NextRequest): Promise<boolean> {
-  const clientIp = getClientIp(request)
-
-  const isValidToken = isCronRequest(request)
+  const [clientIp, isValidToken, requestHeaders] = await Promise.all([
+    getClientIp(request),
+    isCronRequest(request),
+    headers(),
+  ])
 
   if (!isValidToken) {
     await logSecurityEventFromRequest(request, SecurityEventType.CRON_AUTH_FAILURE, {
       action: "cron_authentication",
       success: false,
       metadata: {
-        hasAuthHeader: !!request.headers.get("authorization"),
+        hasAuthHeader: !!requestHeaders.get("authorization"),
         path: request.nextUrl.pathname,
         ip: clientIp,
       },

@@ -1,8 +1,9 @@
 import { createAuthHandler } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextRequest, NextResponse } from "next/server"
+import { connection, NextRequest, NextResponse } from "next/server"
 
 export const GET = createAuthHandler(async (request: NextRequest, user) => {
+  await connection()
   try {
     if (!user.id) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
