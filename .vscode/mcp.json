@@ -6,6 +6,12 @@
       "args": [
         "biocontext_kb@latest"
       ]
+    },
+    "anndata_mcp": {
+      "command": "uvx",
+      "args": [
+        "anndata_mcp@latest"
+      ]
     }
   }
 }
