@@ -2,7 +2,6 @@ import SearchableRegistryList from "@/components/registry/searchable-registry-li
 import { getPaginatedMCPServers } from "@/lib/registry"
 import type { Metadata } from "next"
 import { cacheLife, cacheTag } from "next/cache"
-import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "MCP Server Registry | BioContextAI",
@@ -97,21 +96,13 @@ export default async function RegistryPage({ searchParams }: RegistryPageProps) 
           </div>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="animate-pulse space-y-4">
-              <div className="h-64 bg-muted rounded" />
-            </div>
-          }
-        >
-          <RegistryContent
-            page={currentPage}
-            search={searchQuery}
-            sortBy={sortBy}
-            hasInstallation={hasInstallation}
-            isRemote={isRemote}
-          />
-        </Suspense>
+        <RegistryContent
+          page={currentPage}
+          search={searchQuery}
+          sortBy={sortBy}
+          hasInstallation={hasInstallation}
+          isRemote={isRemote}
+        />
       </div>
     </div>
   )

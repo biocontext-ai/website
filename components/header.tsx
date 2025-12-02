@@ -1,18 +1,13 @@
 import { cn } from "@/lib/utils"
-import CustomLink from "./custom-link"
 import { MainNav } from "./main-nav"
+import Snackbar from "./snackbar"
 import { ThemeToggle } from "./theme-toggle"
 import UserButton from "./user-button"
 
 export default function Header({ className }: { className?: string }) {
   return (
     <>
-      <div className="w-full text-center text-pretty bg-blue-950 p-2 text-sm text-white">
-        <strong className="whitespace-nowrap">Our Correspondence is out in Nature Biotechnology!</strong>&nbsp;
-        <CustomLink href="https://www.nature.com/articles/s41587-025-02900-9" className="text-white underline">
-          BioContextAI is a community hub for agentic biomedical systems
-        </CustomLink>
-      </div>
+      <Snackbar />
       <header
         className={cn(
           "sticky flex border-b bg-background lg:supports-[backdrop-filter]:backdrop-blur lg:supports-[backdrop-filter]:bg-background/60",
