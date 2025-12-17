@@ -47,12 +47,24 @@ interface ModelOption {
 
 const models: ModelOption[] = [
   {
+    id: "gemini-3-flash-preview",
+    name: "Gemini 3 Flash Preview",
+    provider: "google",
+    requiresApiKey: false,
+    supportsOptionalApiKey: true,
+    description:
+      "Free with community key, or use your own API key for higher limits. Chats used by the provider to improve their products.",
+    badge: "Free",
+    icon: <Gemini className="h-4 w-4 mr-2" />,
+  },
+  {
     id: "gemini-2.5-flash-latest",
     name: "Gemini 2.5 Flash",
     provider: "google",
     requiresApiKey: false,
     supportsOptionalApiKey: true,
-    description: "Free with community key, or use your own API key for higher limits",
+    description:
+      "Free with community key, or use your own API key for higher limits. Chats used by the provider to improve their products.",
     badge: "Free",
     icon: <Gemini className="h-4 w-4 mr-2" />,
   },
@@ -75,8 +87,8 @@ const models: ModelOption[] = [
     icon: <Claude className="h-4 w-4 mr-2" />,
   },
   {
-    id: "claude-opus-4-1-20250805",
-    name: "Claude Opus 4.1",
+    id: "claude-opus-4-5-20251101",
+    name: "Claude Opus 4.5",
     provider: "anthropic",
     requiresApiKey: true,
     description: "Largest Anthropic model",
@@ -177,7 +189,7 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const [pendingModel, setPendingModel] = useState<string>("")
 
   // Get the default free model to switch to
-  const defaultFreeModel = models.find((m) => m.id === "gemini-2.5-flash-latest")!
+  const defaultFreeModel = models.find((m) => m.id === "gemini-3-flash-preview")!
 
   const currentModel = models.find((m) => m.id === selectedModel)
 

@@ -256,10 +256,13 @@ export async function POST(req: NextRequest) {
       provider = createGoogleGenerativeAI({
         apiKey: (key || process.env.GEMINI_API_KEY) as string,
       })
-      modelName = model || "gemini-2.5-flash"
+      modelName = model || "gemini-3-flash-preview"
       // Validate and default to supported model if needed
-      if (modelName && ["gemini-2.5-flash", "gemini-2.5-flash-lite"].indexOf(modelName) === -1) {
-        modelName = "gemini-2.5-flash"
+      if (
+        modelName &&
+        ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"].indexOf(modelName) === -1
+      ) {
+        modelName = "gemini-3-flash-preview"
       }
     }
 

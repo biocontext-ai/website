@@ -19,9 +19,10 @@ export default function ChatAbout() {
           </AlertTitle>
           <AlertDescription className="lg:text-justify">
             You can choose between free community models and your own API keys. Please note that free models may have
-            usage limits. You are responsible for the costs and usage of your own API keys. Data accessed through APIs
-            exposed via MCP servers is subject to their respective terms and licences. You are responsible for ensuring
-            compliance with rate limits, citation requirements and usage restrictions. See{" "}
+            usage limits and that chat content may be accessed and used by the providers. You are responsible for the
+            costs and usage of your own API keys. Data accessed through APIs exposed via MCP servers is subject to their
+            respective terms and licences. You are responsible for ensuring compliance with rate limits, citation
+            requirements and usage restrictions. See{" "}
             <Link href="/docs/knowledgebase" className="text-primary hover:underline">
               Data Sources and Licensing
             </Link>{" "}
