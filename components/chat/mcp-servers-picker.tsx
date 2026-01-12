@@ -114,7 +114,7 @@ export default function McpServersDialog({ children, onServersChange, currentSer
   }
 
   const handleReset = () => {
-    const defaultServers = [{ name: "BioContextAI Knowledgebase MCP", url: "https://mcp.biocontext.ai/mcp/" }]
+    const defaultServers = [{ name: "BioContextAI Knowledgebase MCP", url: "https://biocontext-kb.fastmcp.app/mcp" }]
 
     setLocalServers(defaultServers)
     setMcpServers(defaultServers)

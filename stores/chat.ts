@@ -73,7 +73,7 @@ export type ChatStore = ChatSettings & ChatActions
 
 // Default values
 const DEFAULT_MCP_SERVERS: McpServer[] = [
-  { name: "BioContextAI Knowledgebase MCP", url: "https://mcp.biocontext.ai/mcp/" },
+  { name: "BioContextAI Knowledgebase MCP", url: "https://biocontext-kb.fastmcp.app/mcp" },
 ]
 
 const DEFAULT_MODEL = "gemini-3-flash-preview"

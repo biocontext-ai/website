@@ -35,7 +35,7 @@ MCP servers can be written in any language that can print to `stdout` or serve a
 BioContextAI Knowledgebase MCP supports:
 
 - **stdio**: For local installations, the server communicates via standard input/output (stdio).
-- **Streamable HTTP**: For remote or local network access, the server exposes a streamable HTTP endpoint (e.g., `https://mcp.biocontext.ai/mcp/`). Streamable HTTP is the new MCP standard for over-network access, replacing the older HTTP+SSE transport as of protocol version 2024-11-05. In this transport, the server provides a single HTTP endpoint that supports both POST and GET requests. Streaming and server-to-client notifications are supported, and servers may optionally use SSE for streaming, but this is not required. See the [MCP Transports documentation](https://modelcontextprotocol.io/docs/concepts/transports.md) for details.
+- **Streamable HTTP**: For remote or local network access, the server exposes a streamable HTTP endpoint (e.g., `https://biocontext-kb.fastmcp.app/mcp`). Streamable HTTP is the new MCP standard for over-network access, replacing the older HTTP+SSE transport as of protocol version 2024-11-05. In this transport, the server provides a single HTTP endpoint that supports both POST and GET requests. Streaming and server-to-client notifications are supported, and servers may optionally use SSE for streaming, but this is not required. See the [MCP Transports documentation](https://modelcontextprotocol.io/docs/concepts/transports.md) for details.
 
 > Note: BioContextAI Knowledgebase MCP does not support WebSocket or other transport types.
 
@@ -45,7 +45,7 @@ BioContextAI Knowledgebase MCP supports:
 
 1. **Install an MCP-compatible client or extension** for your code assistant. For example, [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) in VS Code, or the MCP extension in Cursor or WindSurf.
 2. **Add the BioContextAI Knowledgebase MCP** using the following URL:
-   - `https://mcp.biocontext.ai/mcp/`
+   - `https://biocontext-kb.fastmcp.app/mcp`
 3. **Configure the server** in your code assistant&apos;s MCP settings. This usually involves adding a server entry with the type `http` (for streamable HTTP) or specifying a command for local servers (stdio).
 4. **Restart your code assistant** if required.
 5. **Verify the integration** by checking for available tools or running a test query.
@@ -64,7 +64,7 @@ BioContextAI Knowledgebase MCP supports:
   "servers": {
     "biocontext": {
       "type": "http",
-      "url": "https://mcp.biocontext.ai/mcp/"
+      "url": "https://biocontext-kb.fastmcp.app/mcp"
     }
   }
 }`}
@@ -96,7 +96,7 @@ Cursor supports stdio and HTTP-based transports for MCP servers. For streamable 
   value={`{
   "mcpServers": {
     "biocontext": {
-      "url": "https://mcp.biocontext.ai/mcp/"
+      "url": "https://biocontext-kb.fastmcp.app/mcp"
     }
   }
 }`}
@@ -134,7 +134,7 @@ Windsurf (Cascade) natively integrates with MCP, allowing you to add MCP servers
   value={`{
   "mcpServers": {
     "biocontext": {
-      "url": "https://mcp.biocontext.ai/mcp/"
+      "url": "https://biocontext-kb.fastmcp.app/mcp"
     }
   }
 }`}

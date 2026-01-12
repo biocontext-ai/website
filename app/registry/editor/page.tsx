@@ -1154,7 +1154,7 @@ function InstallationStep() {
               <FormItem>
                 <FormLabel className="text-sm">{FIELD_LABELS.url} (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://mcp.biocontext.ai/mcp/" {...field} className="text-sm" />
+                  <Input placeholder="https://biocontext-kb.fastmcp.app/mcp" {...field} className="text-sm" />
                 </FormControl>
                 <FormDescription className="text-xs">For streamable HTTP installation</FormDescription>
                 <FormMessage />
