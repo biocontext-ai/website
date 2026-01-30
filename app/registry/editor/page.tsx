@@ -540,23 +540,24 @@ function BasicInformationStep() {
 
     const repoInfo = extractRepoInfo(value)
     if (repoInfo) {
+      const opts = { shouldDirty: true } as const
       // Auto-fill if fields are empty
       if (!form.getValues("identifier")) {
-        form.setValue("identifier", repoInfo.identifier)
+        form.setValue("identifier", repoInfo.identifier, opts)
       }
       if (!form.getValues("codeRepository")) {
-        form.setValue("codeRepository", repoInfo.codeRepository)
+        form.setValue("codeRepository", repoInfo.codeRepository, opts)
       }
       if (!form.getValues("softwareHelp")?.url) {
-        form.setValue("softwareHelp.url", repoInfo.softwareHelpUrl)
-        form.setValue("softwareHelp.name", "Documentation")
+        form.setValue("softwareHelp.url", repoInfo.softwareHelpUrl, opts)
+        form.setValue("softwareHelp.name", "Documentation", opts)
       }
       // Auto-fill first maintainer's identifier and URL if empty
       if (!form.getValues("maintainer.0.identifier")) {
-        form.setValue("maintainer.0.identifier", repoInfo.maintainerIdentifier)
+        form.setValue("maintainer.0.identifier", repoInfo.maintainerIdentifier, opts)
       }
       if (!form.getValues("maintainer.0.url")) {
-        form.setValue("maintainer.0.url", repoInfo.maintainerUrl)
+        form.setValue("maintainer.0.url", repoInfo.maintainerUrl, opts)
       }
     }
   }

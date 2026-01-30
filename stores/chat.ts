@@ -335,7 +335,7 @@ export const useChatStore = create<ChatStore>()(
         conversations: state.conversations,
         currentConversationId: state.currentConversationId,
       }),
-      version: 5,
+      version: 6,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to version 2
         if (version === 1) {
@@ -433,6 +433,20 @@ export const useChatStore = create<ChatStore>()(
             groqApiKey: null,
             conversations: oldState.conversations || [createNewConversation()],
             currentConversationId: oldState.currentConversationId || null,
+          }
+        }
+
+        // Migrate from version 5 to version 6
+        if (version === 5) {
+          const oldState = persistedState as ChatSettings
+
+          return {
+            ...oldState,
+            mcpServers: oldState.mcpServers.map((server) => ({
+              ...server,
+              url:
+                server.url === "https://mcp.biocontext.ai/mcp" ? "https://biocontext-kb.fastmcp.app/mcp" : server.url,
+            })),
           }
         }
 
