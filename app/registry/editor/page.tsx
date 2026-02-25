@@ -1365,7 +1365,7 @@ function ReviewDownloadStep() {
   const [isValidating, setIsValidating] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
-  const values = useWatch({ control: form.control })
+  const values = useWatch({ control: form.control }) as McpServerFormValues
 
   // Generate YAML preview
   const generateYaml = (values: McpServerFormValues) => {
