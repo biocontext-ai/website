@@ -17,7 +17,7 @@ import { ApplicationCategory } from "@prisma/client"
 import { AlertCircle, Check, Copy, Download, PlusCircle, Trash2 } from "lucide-react"
 import Link from "next/link"
 import React, { useState } from "react"
-import { useForm, useFormContext } from "react-hook-form"
+import { useForm, useFormContext, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 // Operating systems and programming languages enums
@@ -899,7 +899,7 @@ function MetadataStep() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm">{FIELD_LABELS.applicationCategory} *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Select a category" />
@@ -1086,6 +1086,7 @@ function MetadataStep() {
 
 function InstallationStep() {
   const form = useFormContext<McpServerFormValues>()
+  const installationType = useWatch({ control: form.control, name: "installationType" })
 
   const handlePackageChange = (packageName: string, packageType: "npm" | "python", previousPackageName: string) => {
     const currentCommand = form.getValues("mcpCommand")
@@ -1169,7 +1170,7 @@ function InstallationStep() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm">{FIELD_LABELS.installationType}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Select package type" />
@@ -1187,7 +1188,7 @@ function InstallationStep() {
             )}
           />
 
-          {form.watch("installationType") === "npm" && (
+          {installationType === "npm" && (
             <FormField
               control={form.control}
               name="npmPackage"
@@ -1215,7 +1216,7 @@ function InstallationStep() {
             />
           )}
 
-          {form.watch("installationType") === "python" && (
+          {installationType === "python" && (
             <FormField
               control={form.control}
               name="pythonPackage"
@@ -1241,7 +1242,7 @@ function InstallationStep() {
             />
           )}
 
-          {form.watch("installationType") && form.watch("installationType") !== "none" && (
+          {installationType && installationType !== "none" && (
             <>
               <Separator className="my-3" />
 

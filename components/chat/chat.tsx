@@ -611,7 +611,6 @@ export default function Chat({ name: name }: { name?: string }) {
     return googleApiKey
   })()
 
-  const addMessage = useChatStore(useShallow((state) => state.addMessage))
   const setMessages = useChatStore(useShallow((state) => state.setMessages))
   const deleteMessage = useChatStore(useShallow((state) => state.deleteMessage))
   const updateMessage = useChatStore(useShallow((state) => state.updateMessage))
@@ -622,9 +621,6 @@ export default function Chat({ name: name }: { name?: string }) {
   const currentConversationId = useChatStore(useShallow((state) => state.currentConversationId))
   const conversations = useChatStore(useShallow((state) => state.conversations))
   const setCurrentConversation = useChatStore(useShallow((state) => state.setCurrentConversation))
-
-  // Find the current conversation from the list
-  const currentConversation = conversations.find((c) => c.id === currentConversationId) || conversations[0]
 
   // Ensure we have a current conversation ID set
   useEffect(() => {
@@ -647,74 +643,39 @@ export default function Chat({ name: name }: { name?: string }) {
     transport: new DefaultChatTransport({
       api: "/api/chat/",
     }),
-    onFinish: ({ message }: { message: UIMessage }) => {
-      addMessage(message)
-    },
     experimental_throttle: 50,
   })
 
   // Load conversation messages when conversation ID changes
   useEffect(() => {
-    if (currentConversation && currentConversation.id !== loadedConversationIdRef.current) {
-      // Update the ref to track which conversation is loaded
-      loadedConversationIdRef.current = currentConversation.id
-      // Load the conversation's messages into AI SDK
-      setAiMessages(currentConversation.messages)
+    if (currentConversationId && currentConversationId !== loadedConversationIdRef.current) {
+      loadedConversationIdRef.current = currentConversationId
+      const conversation = useChatStore.getState().conversations.find((c) => c.id === currentConversationId)
+      setAiMessages(conversation?.messages ?? [])
     }
-  }, [currentConversation, setAiMessages])
+  }, [currentConversationId, setAiMessages])
 
-  // Sync messages back to store after they update
+  const prevStatusRef = useRef(status)
+
   useEffect(() => {
-    // Only sync if:
-    // 1. We have a current conversation
-    // 2. The loaded conversation ID matches the current conversation ID (no race condition)
-    // 3. We're not currently streaming
-    // 4. Messages actually changed
-    if (currentConversation && loadedConversationIdRef.current === currentConversation.id && status === "ready") {
-      // Check if messages have actually changed
-      const messageIdsMatch =
-        messages.length === currentConversation.messages.length &&
-        messages.every((m, i) => m.id === currentConversation.messages[i]?.id)
+    const wasActive = prevStatusRef.current === "submitted" || prevStatusRef.current === "streaming"
+    prevStatusRef.current = status
 
-      // Only sync if messages changed
-      if (!messageIdsMatch) {
-        setMessages(messages)
-      }
+    if (
+      (status === "ready" || status === "error") &&
+      wasActive &&
+      loadedConversationIdRef.current === currentConversationId
+    ) {
+      setMessages(messages)
     }
-  }, [messages, status, setMessages, currentConversation])
+  }, [status, messages, setMessages, currentConversationId])
 
-  // Custom submit handler that syncs user message immediately
   const handleSubmitAction = (e?: React.FormEvent<HTMLFormElement>) => {
-    if (e) {
-      e.preventDefault()
-    }
-
+    if (e) e.preventDefault()
     if (!input.trim()) return
-
     if (["submitted", "streaming"].includes(status)) return
 
-    // Add user message to store immediately
-    const userMessage: UIMessage = {
-      id: `user-${Date.now()}`,
-      role: "user" as const,
-      parts: [
-        {
-          type: "text",
-          text: input.trim(),
-        } as TextUIPart,
-      ],
-    }
-
-    // Update store with user message and send it
-    addMessage(userMessage)
-    sendMessage(userMessage, {
-      body: {
-        mcpServers,
-        apiKey,
-        selectedModel,
-      },
-    })
-
+    sendMessage({ text: input.trim() }, { body: { mcpServers, apiKey, selectedModel } })
     setInput("")
   }
 
