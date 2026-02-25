@@ -645,6 +645,7 @@ function BasicInformationStep() {
 
 function MaintainersLicenseStep() {
   const form = useFormContext<McpServerFormValues>()
+  const maintainer = useWatch({ control: form.control, name: "maintainer" })
 
   const addMaintainer = () => {
     const current = form.getValues("maintainer")
@@ -669,11 +670,11 @@ function MaintainersLicenseStep() {
           <p className="text-xs text-muted-foreground mt-1">People or organizations maintaining this server</p>
         </CardHeader>
         <CardContent className="px-0 space-y-3">
-          {form.watch("maintainer").map((_, index) => (
+          {maintainer.map((_, index) => (
             <div key={index} className="p-3 border rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <h4 className="text-xs font-medium text-muted-foreground">Maintainer {index + 1}</h4>
-                {form.watch("maintainer").length > 1 && (
+                {maintainer.length > 1 && (
                   <Button type="button" variant="ghost" size="sm" onClick={() => removeMaintainer(index)}>
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -857,6 +858,8 @@ function MaintainersLicenseStep() {
 
 function MetadataStep() {
   const form = useFormContext<McpServerFormValues>()
+  const keywords = useWatch({ control: form.control, name: "keywords" })
+  const featureList = useWatch({ control: form.control, name: "featureList" })
 
   const addKeyword = () => {
     const current = form.getValues("keywords") || []
@@ -1019,7 +1022,7 @@ function MetadataStep() {
           <p className="text-xs text-muted-foreground mt-1">Tags for discovery (max 10)</p>
         </CardHeader>
         <CardContent className="px-0 space-y-2">
-          {(form.watch("keywords") || []).map((_, index) => (
+          {(keywords || []).map((_, index) => (
             <div key={index} className="flex gap-2">
               <FormField
                 control={form.control}
@@ -1038,7 +1041,7 @@ function MetadataStep() {
               </Button>
             </div>
           ))}
-          {(form.watch("keywords") || []).length < 10 && (
+          {(keywords || []).length < 10 && (
             <Button type="button" variant="outline" size="sm" onClick={addKeyword}>
               <PlusCircle className="w-3 h-3 mr-2" />
               Add Keyword
@@ -1055,7 +1058,7 @@ function MetadataStep() {
           <p className="text-xs text-muted-foreground mt-1">Main features/services (optional)</p>
         </CardHeader>
         <CardContent className="px-0 space-y-2">
-          {(form.watch("featureList") || []).map((_, index) => (
+          {(featureList || []).map((_, index) => (
             <div key={index} className="flex gap-2">
               <FormField
                 control={form.control}
@@ -1362,7 +1365,7 @@ function ReviewDownloadStep() {
   const [isValidating, setIsValidating] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
-  const values = form.watch()
+  const values = useWatch({ control: form.control })
 
   // Generate YAML preview
   const generateYaml = (values: McpServerFormValues) => {
