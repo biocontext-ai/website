@@ -24,6 +24,8 @@ const envSchema = z.object({
 
   // External APIs
   GITHUB_TOKEN: z.string().min(1, "GitHub API token is required"),
+  /** Optional; improves GitLab.com rate limits for README sync */
+  GITLAB_TOKEN: z.string().optional(),
   GEMINI_API_KEY: z.string().min(1, "Gemini API key is required"),
 
   // Bluesky (optional)
