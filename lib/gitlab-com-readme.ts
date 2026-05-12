@@ -1,8 +1,8 @@
-import { parseGitLabComProjectPath } from "@/lib/gitlab-com-url"
+import { parseGitLabComProjectPath } from "@/lib/repo-code-host-url"
 
 const GITLAB_API = "https://gitlab.com/api/v4"
 
-const README_CANDIDATES = ["README.md", "README.rst", "README", "readme.md"]
+const README_CANDIDATES = ["README.md", "README.rst", "README", "readme.md"] as const
 
 export type GitLabComReadmeResult = {
   content: string

@@ -1,4 +1,4 @@
-import { parseGitLabComLinkContext } from "@/lib/gitlab-com-url"
+import { parseGitHubComRepoUrl, parseGitLabComLinkContext } from "@/lib/repo-code-host-url"
 import "@/node_modules/rehype-github-alerts/dist/styling/css/index.css"
 import { defaultSchema } from "hast-util-sanitize"
 import { StaticImport } from "next/dist/shared/lib/get-img-props"
@@ -27,31 +27,6 @@ const sanitizeSchema = {
       return attrName !== "className" && attrName !== "style"
     }),
   },
-}
-
-// Helper function to parse GitHub repository URL
-function parseGitHubUrl(url: string): { owner: string; repo: string; branch?: string } | null {
-  try {
-    const patterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?(?:\/(?:tree|blob)\/([^\/]+))?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) {
-        return {
-          owner: match[1],
-          repo: match[2],
-          branch: match[3] || "main", // Default to 'main' if no branch specified
-        }
-      }
-    }
-    return null
-  } catch (error) {
-    console.error("Error parsing GitHub URL:", error)
-    return null
-  }
 }
 
 // Helper function to clean up problematic HTML tags while preserving content
@@ -100,7 +75,11 @@ function cleanProblematicHtmlTags(content: string): string {
   return cleanedContent
 }
 
-const RAW_FRIENDLY_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "svg", "ico", "pdf", "zip", "tar", "gz"])
+const RAW_FRIENDLY_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "ico", "pdf", "zip", "tar", "gz"] as const
+
+function isRawFriendlyExtension(lowercaseExt: string): boolean {
+  return (RAW_FRIENDLY_EXTENSIONS as readonly string[]).includes(lowercaseExt)
+}
 
 type RelativeRepoLinkRewrite = {
   toRaw: (path: string) => string
@@ -112,13 +91,29 @@ function stripLeadingDotSlash(url: string): string {
   return url.startsWith("./") ? url.slice(2) : url
 }
 
-function relativePathToNavigableUrl(relPath: string, r: RelativeRepoLinkRewrite): string {
-  const p = stripLeadingDotSlash(relPath)
-  if (!p.includes(".")) {
-    return r.toTree(p)
+function isDangerousRelativeRepoPath(relPath: string): boolean {
+  const p = relPath.trim()
+  if (!p) return true
+  if (p.startsWith("//")) return true
+  if (p.startsWith("/") || p.startsWith("\\")) return true
+  const normalized = stripLeadingDotSlash(p).replace(/\\/g, "/")
+  return normalized.split("/").some((segment) => segment === "..")
+}
+
+function relativePathToNavigableUrl(relPath: string, r: RelativeRepoLinkRewrite): string | null {
+  if (isDangerousRelativeRepoPath(relPath)) return null
+  const p = stripLeadingDotSlash(relPath).replace(/\\/g, "/")
+  if (!p) return null
+  if (p.endsWith("/")) {
+    const dir = p.replace(/\/+$/u, "").replace(/^\/+/u, "")
+    return r.toTree(dir === "" ? "." : dir)
   }
-  const ext = p.split(".").pop()?.toLowerCase()
-  if (RAW_FRIENDLY_EXTENSIONS.has(ext || "")) {
+  const lastSeg = p.split("/").pop() ?? p
+  if (!lastSeg.includes(".")) {
+    return r.toBlob(p)
+  }
+  const ext = lastSeg.split(".").pop()?.toLowerCase()
+  if (ext && isRawFriendlyExtension(ext)) {
     return r.toRaw(p)
   }
   return r.toBlob(p)
@@ -130,6 +125,7 @@ function rewriteRelativeMarkdownLinks(content: string, r: RelativeRepoLinkRewrit
       return match
     }
     const convertedUrl = relativePathToNavigableUrl(url, r)
+    if (!convertedUrl) return match
     return `[${text}](${convertedUrl})`
   })
 
@@ -138,6 +134,7 @@ function rewriteRelativeMarkdownLinks(content: string, r: RelativeRepoLinkRewrit
       return match
     }
     const convertedUrl = relativePathToNavigableUrl(url, r)
+    if (!convertedUrl) return match
     return match.replace(/href\s*=\s*["'][^"']+["']/, `href="${convertedUrl}"`)
   })
 
@@ -145,7 +142,8 @@ function rewriteRelativeMarkdownLinks(content: string, r: RelativeRepoLinkRewrit
     if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
       return match
     }
-    const convertedSrc = r.toRaw(stripLeadingDotSlash(src))
+    if (isDangerousRelativeRepoPath(src)) return match
+    const convertedSrc = r.toRaw(stripLeadingDotSlash(src).replace(/\\/g, "/"))
     return match.replace(/src\s*=\s*["'][^"']+["']/, `src="${convertedSrc}"`)
   })
 
@@ -153,11 +151,11 @@ function rewriteRelativeMarkdownLinks(content: string, r: RelativeRepoLinkRewrit
 }
 
 function githubRelativeLinkRewrite(repositoryUrl: string): RelativeRepoLinkRewrite | null {
-  const repoInfo = parseGitHubUrl(repositoryUrl)
-  if (!repoInfo) return null
+  const parsed = parseGitHubComRepoUrl(repositoryUrl)
+  if (!parsed) return null
 
-  const { owner, repo, branch } = repoInfo
-  const ref = branch ?? "main"
+  const { owner, repo, treeOrBlobRef } = parsed
+  const ref = treeOrBlobRef ?? "main"
   const baseUrl = `https://github.com/${owner}/${repo}`
   return {
     toRaw: (path) => `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`,

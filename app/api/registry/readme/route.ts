@@ -2,92 +2,16 @@ import { isCronRequest } from "@/lib/cron"
 import { env } from "@/lib/env"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { fetchGitLabComReadme } from "@/lib/gitlab-com-readme"
-import { parseGitLabComProjectPath } from "@/lib/gitlab-com-url"
 import { prisma } from "@/lib/prisma"
+import { codeRepositoryHost, parseGitHubComRepoUrl, parseGitLabComProjectPath } from "@/lib/repo-code-host-url"
+import type { ReadmePayload } from "@/lib/repo-readme-cron"
+import { MCP_SERVER_REPO_README_CRON_WHERE, persistFetchedReadme, shouldUpdateReadme } from "@/lib/repo-readme-cron"
 import { Octokit } from "@octokit/rest"
 import { connection, NextRequest, NextResponse } from "next/server"
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 })
-
-type ReadmePayload = {
-  content: string
-  encoding: string
-  sha: string
-  size: number
-}
-
-function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
-  try {
-    const patterns = [
-      /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/,
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) {
-        return { owner: match[1], repo: match[2] }
-      }
-    }
-    return null
-  } catch (error) {
-    console.error("Error parsing GitHub URL:", error)
-    return null
-  }
-}
-
-function shouldUpdateReadme(lastChecked: Date | null): boolean {
-  if (!lastChecked) return true
-
-  const twelveHoursAgo = new Date()
-  twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12)
-
-  return lastChecked < twelveHoursAgo
-}
-
-function isGitHubRepoUrl(url: string): boolean {
-  return url.includes("github.com")
-}
-
-function isGitLabComRepoUrl(url: string): boolean {
-  return url.includes("gitlab.com")
-}
-
-async function persistFetchedReadme(
-  mcpServerId: string,
-  existingReadme: { sha: string | null } | null | undefined,
-  data: ReadmePayload,
-): Promise<"unchanged" | "persisted"> {
-  if (existingReadme?.sha === data.sha) {
-    await prisma.gitHubReadme.update({
-      where: { mcpServerId },
-      data: { lastChecked: new Date() },
-    })
-    return "unchanged"
-  }
-
-  await prisma.gitHubReadme.upsert({
-    where: { mcpServerId },
-    update: {
-      content: data.content,
-      encoding: data.encoding,
-      sha: data.sha,
-      size: data.size,
-      lastChecked: new Date(),
-    },
-    create: {
-      mcpServerId,
-      content: data.content,
-      encoding: data.encoding,
-      sha: data.sha,
-      size: data.size,
-      lastChecked: new Date(),
-    },
-  })
-  return "persisted"
-}
 
 export async function GET(request: NextRequest) {
   await connection()
@@ -100,9 +24,7 @@ export async function GET(request: NextRequest) {
     console.log("Starting repository README update job...")
 
     const mcpServers = await prisma.mcpServer.findMany({
-      where: {
-        OR: [{ codeRepository: { contains: "github.com" } }, { codeRepository: { contains: "gitlab.com" } }],
-      },
+      where: MCP_SERVER_REPO_README_CRON_WHERE,
       include: {
         githubReadme: true,
       },
@@ -114,7 +36,7 @@ export async function GET(request: NextRequest) {
     let skippedCount = 0
     let errorCount = 0
 
-    const gitlabToken = env.GITLAB_TOKEN?.trim() || undefined
+    const gitlabToken = env.GITLAB_TOKEN
 
     for (const server of mcpServers) {
       const repoUrl = server.codeRepository
@@ -130,19 +52,20 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        if (isGitHubRepoUrl(repoUrl)) {
-          const githubInfo = parseGitHubUrl(repoUrl)
-          if (!githubInfo) {
+        const host = codeRepositoryHost(repoUrl)
+        if (host === "github.com") {
+          const githubParts = parseGitHubComRepoUrl(repoUrl)
+          if (!githubParts) {
             console.warn(`Could not parse GitHub URL for ${server.identifier}: ${repoUrl}`)
             errorCount++
             continue
           }
 
-          console.log(`Fetching README for ${githubInfo.owner}/${githubInfo.repo}`)
+          console.log(`Fetching README for ${githubParts.owner}/${githubParts.repo}`)
 
           const { data: readmeData } = await octokit.rest.repos.getReadme({
-            owner: githubInfo.owner,
-            repo: githubInfo.repo,
+            owner: githubParts.owner,
+            repo: githubParts.repo,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
@@ -155,21 +78,21 @@ export async function GET(request: NextRequest) {
             size: readmeData.size,
           }
 
-          const outcome = await persistFetchedReadme(server.id, existingReadme, payload)
+          const readmeBodyUpdated = await persistFetchedReadme(server.id, existingReadme, payload)
 
-          if (outcome === "unchanged") {
-            console.log(`README content unchanged for ${server.identifier}`)
-            skippedCount++
-          } else {
-            console.log(`Updated README for ${server.identifier} (${readmeData.size} bytes)`)
-            updatedCount++
-          }
+          console.log(
+            readmeBodyUpdated
+              ? `Updated README for ${server.identifier} (${readmeData.size} bytes)`
+              : `README content unchanged for ${server.identifier}`,
+          )
+          if (readmeBodyUpdated) updatedCount++
+          else skippedCount++
 
           await new Promise((resolve) => setTimeout(resolve, 100))
           continue
         }
 
-        if (isGitLabComRepoUrl(repoUrl)) {
+        if (host === "gitlab.com") {
           const glPath = parseGitLabComProjectPath(repoUrl)
           if (!glPath) {
             console.warn(`Could not parse GitLab.com URL for ${server.identifier}: ${repoUrl}`)
@@ -186,15 +109,22 @@ export async function GET(request: NextRequest) {
             continue
           }
 
-          const outcome = await persistFetchedReadme(server.id, existingReadme, readmeData)
-
-          if (outcome === "unchanged") {
-            console.log(`README content unchanged for ${server.identifier}`)
-            skippedCount++
-          } else {
-            console.log(`Updated README for ${server.identifier} (${readmeData.size} bytes)`)
-            updatedCount++
+          const payload: ReadmePayload = {
+            content: readmeData.content,
+            encoding: readmeData.encoding,
+            sha: readmeData.sha,
+            size: readmeData.size,
           }
+
+          const readmeBodyUpdated = await persistFetchedReadme(server.id, existingReadme, payload)
+
+          console.log(
+            readmeBodyUpdated
+              ? `Updated README for ${server.identifier} (${readmeData.size} bytes)`
+              : `README content unchanged for ${server.identifier}`,
+          )
+          if (readmeBodyUpdated) updatedCount++
+          else skippedCount++
 
           await new Promise((resolve) => setTimeout(resolve, 100))
           continue
