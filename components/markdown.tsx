@@ -1,3 +1,4 @@
+import { parseGitHubComRepoUrl, parseGitLabComLinkContext } from "@/lib/repo-code-host-url"
 import "@/node_modules/rehype-github-alerts/dist/styling/css/index.css"
 import { defaultSchema } from "hast-util-sanitize"
 import { StaticImport } from "next/dist/shared/lib/get-img-props"
@@ -26,31 +27,6 @@ const sanitizeSchema = {
       return attrName !== "className" && attrName !== "style"
     }),
   },
-}
-
-// Helper function to parse GitHub repository URL
-function parseGitHubUrl(url: string): { owner: string; repo: string; branch?: string } | null {
-  try {
-    const patterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?(?:\/(?:tree|blob)\/([^\/]+))?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) {
-        return {
-          owner: match[1],
-          repo: match[2],
-          branch: match[3] || "main", // Default to 'main' if no branch specified
-        }
-      }
-    }
-    return null
-  } catch (error) {
-    console.error("Error parsing GitHub URL:", error)
-    return null
-  }
 }
 
 // Helper function to clean up problematic HTML tags while preserving content
@@ -99,114 +75,110 @@ function cleanProblematicHtmlTags(content: string): string {
   return cleanedContent
 }
 
-// Helper function to convert relative links to GitHub URLs
-function convertRelativeLinksToGitHub(content: string, repositoryUrl?: string): string {
-  if (!repositoryUrl) {
-    return content
+const RAW_FRIENDLY_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "ico", "pdf", "zip", "tar", "gz"] as const
+
+function isRawFriendlyExtension(lowercaseExt: string): boolean {
+  return (RAW_FRIENDLY_EXTENSIONS as readonly string[]).includes(lowercaseExt)
+}
+
+type RelativeRepoLinkRewrite = {
+  toRaw: (path: string) => string
+  toBlob: (path: string) => string
+  toTree: (path: string) => string
+}
+
+function stripLeadingDotSlash(url: string): string {
+  return url.startsWith("./") ? url.slice(2) : url
+}
+
+function isDangerousRelativeRepoPath(relPath: string): boolean {
+  const p = relPath.trim()
+  if (!p) return true
+  if (p.startsWith("//")) return true
+  if (p.startsWith("/") || p.startsWith("\\")) return true
+  const normalized = stripLeadingDotSlash(p).replace(/\\/g, "/")
+  return normalized.split("/").some((segment) => segment === "..")
+}
+
+function relativePathToNavigableUrl(relPath: string, r: RelativeRepoLinkRewrite): string | null {
+  if (isDangerousRelativeRepoPath(relPath)) return null
+  const p = stripLeadingDotSlash(relPath).replace(/\\/g, "/")
+  if (!p) return null
+  if (p.endsWith("/")) {
+    const dir = p.replace(/\/+$/u, "").replace(/^\/+/u, "")
+    return r.toTree(dir === "" ? "." : dir)
   }
-
-  const repoInfo = parseGitHubUrl(repositoryUrl)
-  if (!repoInfo) {
-    return content
+  const lastSeg = p.split("/").pop() ?? p
+  if (!lastSeg.includes(".")) {
+    return r.toBlob(p)
   }
+  const ext = lastSeg.split(".").pop()?.toLowerCase()
+  if (ext && isRawFriendlyExtension(ext)) {
+    return r.toRaw(p)
+  }
+  return r.toBlob(p)
+}
 
-  const { owner, repo, branch } = repoInfo
-  const baseUrl = `https://github.com/${owner}/${repo}`
-
-  // Convert relative links in markdown format
+function rewriteRelativeMarkdownLinks(content: string, r: RelativeRepoLinkRewrite): string {
   content = content.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (match, text, url) => {
     if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("#")) {
-      return match // Keep absolute URLs, mailto links, and anchors as-is
+      return match
     }
-
-    // Handle different types of relative links
-    let convertedUrl = url
-
-    // Remove leading ./ if present
-    if (convertedUrl.startsWith("./")) {
-      convertedUrl = convertedUrl.substring(2)
-    }
-
-    // Handle different file types and paths
-    if (convertedUrl.includes(".")) {
-      // Likely a file - determine if it should be blob or raw
-      const fileExtension = convertedUrl.split(".").pop()?.toLowerCase()
-      const isImageOrBinary = ["png", "jpg", "jpeg", "gif", "svg", "ico", "pdf", "zip", "tar", "gz"].includes(
-        fileExtension || "",
-      )
-
-      if (isImageOrBinary) {
-        // Use raw content for images and binary files
-        convertedUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${convertedUrl}`
-      } else {
-        // Use blob for text files
-        convertedUrl = `${baseUrl}/blob/${branch}/${convertedUrl}`
-      }
-    } else {
-      // Likely a directory - use tree
-      convertedUrl = `${baseUrl}/tree/${branch}/${convertedUrl}`
-    }
-
+    const convertedUrl = relativePathToNavigableUrl(url, r)
+    if (!convertedUrl) return match
     return `[${text}](${convertedUrl})`
   })
 
-  // Convert relative links in HTML format
-  content = content.replace(/<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, (match, url, text) => {
+  content = content.replace(/<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, (match, url) => {
     if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("#")) {
-      return match // Keep absolute URLs, mailto links, and anchors as-is
+      return match
     }
-
-    // Handle different types of relative links
-    let convertedUrl = url
-
-    // Remove leading ./ if present
-    if (convertedUrl.startsWith("./")) {
-      convertedUrl = convertedUrl.substring(2)
-    }
-
-    // Handle different file types and paths
-    if (convertedUrl.includes(".")) {
-      // Likely a file - determine if it should be blob or raw
-      const fileExtension = convertedUrl.split(".").pop()?.toLowerCase()
-      const isImageOrBinary = ["png", "jpg", "jpeg", "gif", "svg", "ico", "pdf", "zip", "tar", "gz"].includes(
-        fileExtension || "",
-      )
-
-      if (isImageOrBinary) {
-        // Use raw content for images and binary files
-        convertedUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${convertedUrl}`
-      } else {
-        // Use blob for text files
-        convertedUrl = `${baseUrl}/blob/${branch}/${convertedUrl}`
-      }
-    } else {
-      // Likely a directory - use tree
-      convertedUrl = `${baseUrl}/tree/${branch}/${convertedUrl}`
-    }
-
-    // Preserve the original HTML attributes but update the href
+    const convertedUrl = relativePathToNavigableUrl(url, r)
+    if (!convertedUrl) return match
     return match.replace(/href\s*=\s*["'][^"']+["']/, `href="${convertedUrl}"`)
   })
 
-  // Convert relative image sources
   content = content.replace(/<img\s+[^>]*src\s*=\s*["']([^"']+)["'][^>]*>/gi, (match, src) => {
     if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
-      return match // Keep absolute URLs and data URLs as-is
+      return match
     }
-
-    let convertedSrc = src
-
-    // Remove leading ./ if present
-    if (convertedSrc.startsWith("./")) {
-      convertedSrc = convertedSrc.substring(2)
-    }
-
-    // Always use raw content for images
-    convertedSrc = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${convertedSrc}`
-
-    // Update the src attribute
+    if (isDangerousRelativeRepoPath(src)) return match
+    const convertedSrc = r.toRaw(stripLeadingDotSlash(src).replace(/\\/g, "/"))
     return match.replace(/src\s*=\s*["'][^"']+["']/, `src="${convertedSrc}"`)
   })
+
+  return content
+}
+
+function githubRelativeLinkRewrite(repositoryUrl: string): RelativeRepoLinkRewrite | null {
+  const parsed = parseGitHubComRepoUrl(repositoryUrl)
+  if (!parsed) return null
+
+  const { owner, repo, treeOrBlobRef } = parsed
+  const ref = treeOrBlobRef ?? "main"
+  const baseUrl = `https://github.com/${owner}/${repo}`
+  return {
+    toRaw: (path) => `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`,
+    toBlob: (path) => `${baseUrl}/blob/${ref}/${path}`,
+    toTree: (path) => `${baseUrl}/tree/${ref}/${path}`,
+  }
+}
+
+function gitlabRelativeLinkRewrite(projectPath: string, ref: string): RelativeRepoLinkRewrite {
+  const baseUrl = `https://gitlab.com/${projectPath}`
+  return {
+    toRaw: (path) => `${baseUrl}/-/raw/${ref}/${path}`,
+    toBlob: (path) => `${baseUrl}/-/blob/${ref}/${path}`,
+    toTree: (path) => `${baseUrl}/-/tree/${ref}/${path}`,
+  }
+}
+
+function convertRelativeRepoLinks(content: string, repositoryUrl: string): string {
+  const gh = githubRelativeLinkRewrite(repositoryUrl)
+  if (gh) return rewriteRelativeMarkdownLinks(content, gh)
+
+  const gl = parseGitLabComLinkContext(repositoryUrl)
+  if (gl) return rewriteRelativeMarkdownLinks(content, gitlabRelativeLinkRewrite(gl.projectPath, gl.ref))
 
   return content
 }
@@ -215,9 +187,8 @@ const Markdown = (props: MarkdownProps) => {
   // First, clean up problematic HTML tags
   let processedContent = cleanProblematicHtmlTags(props.children)
 
-  // Then, convert relative links to GitHub URLs if repositoryUrl is provided
   if (props.repositoryUrl) {
-    processedContent = convertRelativeLinksToGitHub(processedContent, props.repositoryUrl)
+    processedContent = convertRelativeRepoLinks(processedContent, props.repositoryUrl)
   }
 
   // Then apply other transformations
