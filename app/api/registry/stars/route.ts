@@ -1,6 +1,7 @@
 import { isCronRequest } from "@/lib/cron"
 import { createErrorResponse, createSuccessResponse } from "@/lib/error-handling"
 import { prisma } from "@/lib/prisma"
+import { parseGitHubComRepoUrl } from "@/lib/repo-code-host-url"
 import { Octokit } from "@octokit/rest"
 import { revalidateTag } from "next/cache"
 import { connection, NextRequest, NextResponse } from "next/server"
@@ -8,27 +9,6 @@ import { connection, NextRequest, NextResponse } from "next/server"
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 })
-
-// Helper function to extract owner and repo from GitHub URL
-function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
-  try {
-    const patterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) {
-        return { owner: match[1], repo: match[2] }
-      }
-    }
-    return null
-  } catch (error) {
-    console.error("Error parsing GitHub URL:", error)
-    return null
-  }
-}
 
 // Helper function to check if we should update data (not updated in last 24 hours)
 function shouldUpdateData(lastChecked: Date | null): boolean {
@@ -73,7 +53,7 @@ export async function GET(request: NextRequest) {
     for (const server of mcpServers) {
       try {
         // Parse GitHub URL to get owner and repo
-        const githubInfo = parseGitHubUrl(server.codeRepository)
+        const githubInfo = parseGitHubComRepoUrl(server.codeRepository ?? "")
         if (!githubInfo) {
           console.warn(`Could not parse GitHub URL for ${server.identifier}: ${server.codeRepository}`)
           errorCount++
