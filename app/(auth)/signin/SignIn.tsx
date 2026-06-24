@@ -1,13 +1,13 @@
 "use client"
-import { providerMap } from "@/auth"
+import { providerMap } from "@/auth.providers"
 import GitHub from "@/components/icons/github"
+import LinkedIn from "@/components/icons/linkedin"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Linkedin } from "lucide-react"
 import { AuthError } from "next-auth"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
@@ -148,7 +148,7 @@ const SignIn = (props: { isTestMode: boolean }) => {
                         disabled={isPending}
                       >
                         {provider.name === "GitHub" && <GitHub className="w-4 h-4 mr-2" />}
-                        {provider.name === "LinkedIn" && <Linkedin className="w-4 h-4 mr-2" />}
+                        {provider.name === "LinkedIn" && <LinkedIn className="w-4 h-4 mr-2" />}
                         Sign in with {provider.name}
                       </Button>
                     </form>

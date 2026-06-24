@@ -47,19 +47,8 @@ interface ModelOption {
 
 const models: ModelOption[] = [
   {
-    id: "gemini-3-flash-preview",
-    name: "Gemini 3 Flash Preview",
-    provider: "google",
-    requiresApiKey: false,
-    supportsOptionalApiKey: true,
-    description:
-      "Free with community key, or use your own API key for higher limits. Chats used by the provider to improve their products.",
-    badge: "Free",
-    icon: <Gemini className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gemini-2.5-flash-latest",
-    name: "Gemini 2.5 Flash",
+    id: "gemini-3.5-flash",
+    name: "Gemini 3.5 Flash",
     provider: "google",
     requiresApiKey: false,
     supportsOptionalApiKey: true,
@@ -78,8 +67,8 @@ const models: ModelOption[] = [
     icon: <Claude className="h-4 w-4 mr-2" />,
   },
   {
-    id: "claude-sonnet-4-5",
-    name: "Claude Sonnet 4.5",
+    id: "claude-sonnet-4-6",
+    name: "Claude Sonnet 4.6",
     provider: "anthropic",
     requiresApiKey: true,
     description: "Performant Anthropic model",
@@ -87,8 +76,8 @@ const models: ModelOption[] = [
     icon: <Claude className="h-4 w-4 mr-2" />,
   },
   {
-    id: "claude-opus-4-5-20251101",
-    name: "Claude Opus 4.5",
+    id: "claude-opus-4-8",
+    name: "Claude Opus 4.8",
     provider: "anthropic",
     requiresApiKey: true,
     description: "Largest Anthropic model",
@@ -149,24 +138,6 @@ const models: ModelOption[] = [
     badge: "API Key Required",
     icon: <Zap className="h-4 w-4 mr-2" />,
   },
-  {
-    id: "groq-moonshotai/kimi-k2-instruct-0905",
-    name: "Kimi K2 instruct (Groq)",
-    provider: "groq",
-    requiresApiKey: true,
-    description: "Fast inference with Groq",
-    badge: "API Key Required",
-    icon: <Zap className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "groq-qwen/qwen3-32b",
-    name: "Qwen3-32B (Groq)",
-    provider: "groq",
-    requiresApiKey: true,
-    description: "Fast inference with Groq",
-    badge: "API Key Required",
-    icon: <Zap className="h-4 w-4 mr-2" />,
-  },
 ]
 
 type ModelPickerProps = {
@@ -189,7 +160,7 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const [pendingModel, setPendingModel] = useState<string>("")
 
   // Get the default free model to switch to
-  const defaultFreeModel = models.find((m) => m.id === "gemini-3-flash-preview")!
+  const defaultFreeModel = models.find((m) => m.id === "gemini-3.5-flash")!
 
   const currentModel = models.find((m) => m.id === selectedModel)
 

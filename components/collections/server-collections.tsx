@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { hasCollectionsProperty } from "@/types/api"
 import { BookmarkIcon, Globe, Lock, User } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 interface Collection {
   id: string
@@ -31,11 +31,7 @@ export default function ServerCollections({ serverId, serverName }: ServerCollec
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadCollections()
-  }, [serverId])
-
-  const loadCollections = async () => {
+  const loadCollections = useCallback(async () => {
     try {
       const response = await fetch(`/api/collections/server/${encodeURIComponent(serverId)}`)
       if (response.ok) {
@@ -49,7 +45,11 @@ export default function ServerCollections({ serverId, serverName }: ServerCollec
     } finally {
       setLoading(false)
     }
-  }
+  }, [serverId])
+
+  useEffect(() => {
+    loadCollections()
+  }, [loadCollections])
 
   if (loading) {
     return (

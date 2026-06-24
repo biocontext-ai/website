@@ -125,11 +125,11 @@ export function createErrorResponse(error: unknown, defaultMessage = "Internal s
     // In production, only return field names, not values
     const sanitizedErrors =
       process.env.NODE_ENV === "production"
-        ? error.errors.map((err) => ({
+        ? error.issues.map((err) => ({
             field: err.path.join("."),
             message: err.message,
           }))
-        : error.errors
+        : error.issues
 
     return NextResponse.json(
       {

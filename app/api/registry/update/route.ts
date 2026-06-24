@@ -179,10 +179,13 @@ export async function POST(request: NextRequest) {
       logger.warn("Failed to fetch mcp.json, continuing without installation configs", error as Error)
     }
 
-    // Fetch MCP tools data with timeout and size limit
+    // Fetch MCP tools data with timeout and size limit.
+    // mcp_tools.json is large (>5MB) and grows with the registry — a single server
+    // (e.g. ToolUniverse) can contribute thousands of tool schemas. Use a generous
+    // size cap and timeout so the whole file is ingested rather than silently dropped.
     let mcpToolsData: Record<string, any> = {}
     try {
-      const mcpTools = await fetchWithValidation("https://biocontext.ai/mcp_tools.json", 10000, 5 * 1024 * 1024)
+      const mcpTools = await fetchWithValidation("https://biocontext.ai/mcp_tools.json", 30000, 64 * 1024 * 1024)
       mcpToolsData = mcpTools.mcp_servers || {}
     } catch (error) {
       logger.warn("Failed to fetch mcp_tools.json, continuing without tools data", error as Error)
