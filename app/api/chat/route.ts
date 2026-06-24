@@ -256,13 +256,10 @@ export async function POST(req: NextRequest) {
       provider = createGoogleGenerativeAI({
         apiKey: (key || process.env.GEMINI_API_KEY) as string,
       })
-      modelName = model || "gemini-3-flash-preview"
+      modelName = model || "gemini-3.5-flash"
       // Validate and default to supported model if needed
-      if (
-        modelName &&
-        ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"].indexOf(modelName) === -1
-      ) {
-        modelName = "gemini-3-flash-preview"
+      if (modelName && ["gemini-3.5-flash", "gemini-3.1-flash-lite"].indexOf(modelName) === -1) {
+        modelName = "gemini-3.5-flash"
       }
     }
 
@@ -350,7 +347,7 @@ export async function POST(req: NextRequest) {
         seed: 3407,
         maxOutputTokens: 10000,
         temperature: modelName.startsWith("gpt-5") ? 1 : 0.2,
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
         tools: {
           ...chatTools,
           ...tools,

@@ -17,7 +17,7 @@ import { hasCollectionsProperty } from "@/types/api"
 import { Collection } from "@prisma/client"
 import { BookmarkIcon, PlusCircle } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import CreateCollectionDialog from "./create-collection-dialog"
 
@@ -46,13 +46,7 @@ export default function SaveToCollectionDialog({ children, mcpServerId, serverNa
 
   const { data: session } = useSession()
 
-  useEffect(() => {
-    if (open && session?.user?.id) {
-      loadCollections()
-    }
-  }, [open, session?.user?.id])
-
-  const loadCollections = async () => {
+  const loadCollections = useCallback(async () => {
     if (!session?.user?.id) return
 
     setLoadingCollections(true)
@@ -94,7 +88,13 @@ export default function SaveToCollectionDialog({ children, mcpServerId, serverNa
     } finally {
       setLoadingCollections(false)
     }
-  }
+  }, [session?.user?.id, mcpServerId])
+
+  useEffect(() => {
+    if (open && session?.user?.id) {
+      loadCollections()
+    }
+  }, [open, session?.user?.id, loadCollections])
 
   const handleCollectionToggle = (collectionId: string) => {
     setSelectedCollections((prev) =>

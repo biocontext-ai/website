@@ -66,13 +66,6 @@ export default function UserList() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Reset to first page when search changes
-  useEffect(() => {
-    if (debouncedSearchQuery !== searchQuery) return
-    setPagination((prev) => ({ ...prev, page: 1 }))
-    fetchUsers(1)
-  }, [debouncedSearchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchUsers = async (page = 1) => {
     setLoading(true)
     try {
@@ -105,6 +98,13 @@ export default function UserList() {
       setLoading(false)
     }
   }
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    if (debouncedSearchQuery !== searchQuery) return
+    setPagination((prev) => ({ ...prev, page: 1 }))
+    fetchUsers(1)
+  }, [debouncedSearchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBlockUser = async (userId: string, action: "block" | "unblock") => {
     setActionLoading(userId)

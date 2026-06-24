@@ -147,7 +147,7 @@ const installationSchema = z.object({
       return val || []
     }),
   mcpEnv: z
-    .union([z.string(), z.record(z.string())])
+    .union([z.string(), z.record(z.string(), z.string())])
     .optional()
     .transform((val) => {
       if (typeof val === "string") {
@@ -330,8 +330,8 @@ export default function McpServerEditorPage() {
                 {/* Stepper Navigation */}
                 <nav aria-label="MCP Server Registration Steps" className="py-4">
                   <ol className="flex items-center justify-between gap-1 md:gap-2 overflow-x-auto pb-2">
-                    {methods.all.map((step, index, array) => {
-                      const currentIndex = methods.all.findIndex((s) => s.id === methods.current.id)
+                    {methods.steps.map((step, index, array) => {
+                      const currentIndex = methods.steps.findIndex((s) => s.id === methods.current.id)
                       const isCompleted = index < currentIndex
                       const isCurrent = index === currentIndex
 
@@ -344,7 +344,7 @@ export default function McpServerEditorPage() {
                               variant={isCompleted || isCurrent ? "default" : "secondary"}
                               aria-current={isCurrent ? "step" : undefined}
                               aria-posinset={index + 1}
-                              aria-setsize={methods.all.length}
+                              aria-setsize={methods.steps.length}
                               aria-selected={isCurrent}
                               className={`flex size-9 md:size-10 items-center justify-center rounded-full transition-all flex-shrink-0 ${
                                 isCompleted ? "bg-green-600 hover:bg-green-700" : ""
@@ -414,7 +414,7 @@ export default function McpServerEditorPage() {
                       </AlertDescription>
                     </Alert>
                   )}
-                  {methods.switch({
+                  {methods.match({
                     basic: () => <BasicInformationStep />,
                     maintainers: () => <MaintainersLicenseStep />,
                     metadata: () => <MetadataStep />,
@@ -425,7 +425,14 @@ export default function McpServerEditorPage() {
 
                 {/* Controls */}
                 <div className="flex justify-between pt-6 border-t">
-                  <Button type="button" variant="outline" onClick={methods.prev} disabled={methods.isFirst}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      void methods.prev()
+                    }}
+                    disabled={methods.isFirst}
+                  >
                     Previous
                   </Button>
                   {!methods.isLast ? (
@@ -518,7 +525,7 @@ async function validateStep(stepId: string, form: ReturnType<typeof useForm<McpS
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map((err) => {
+      const errorMessages = error.issues.map((err) => {
         const path = err.path.join(".")
         const fieldLabel = getFieldLabel(path)
         return `${fieldLabel}: ${err.message}`
@@ -1577,7 +1584,7 @@ function ReviewDownloadStep() {
       })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map((err) => `${err.path.join(".")}: ${err.message}`)
+        const errors = error.issues.map((err) => `${err.path.join(".")}: ${err.message}`)
         setValidationErrors(errors)
         toast({
           title: "Validation Failed",
@@ -1621,7 +1628,7 @@ function ReviewDownloadStep() {
       })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map((err) => `${err.path.join(".")}: ${err.message}`)
+        const errors = error.issues.map((err) => `${err.path.join(".")}: ${err.message}`)
         setValidationErrors(errors)
         toast({
           title: "Validation Failed",

@@ -20,12 +20,15 @@ export type StepperConfigProps = {
   tracking?: boolean
 }
 
-export type StepperDefineProps<Steps extends Stepperize.Step[]> = Omit<Stepperize.StepperReturn<Steps>, "Scoped"> & {
+export type StepperDefineProps<Steps extends readonly Stepperize.Step[]> = Omit<
+  Stepperize.StepperDefinition<Steps>,
+  "Provider" | "Stepper"
+> & {
   Stepper: {
     Provider: (
-      props: Omit<Stepperize.ScopedProps<Steps>, "children"> &
-        Omit<React.ComponentProps<"div">, "children"> &
+      props: Omit<Stepperize.ProviderProps<Steps>, "children"> &
         StepperConfigProps & {
+          className?: string
           children: React.ReactNode | ((props: { methods: Stepperize.Stepper<Steps> }) => React.ReactNode)
         },
     ) => React.ReactElement<any>
@@ -60,8 +63,11 @@ const useStepperProvider = (): StepperConfigProps => {
   return context
 }
 
-const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): StepperDefineProps<Steps> => {
-  const { Scoped, useStepper, ...rest } = Stepperize.defineStepper(...steps)
+const defineStepper = <const Steps extends readonly Stepperize.Step[]>(...steps: Steps): StepperDefineProps<Steps> => {
+  const { Provider, useStepper, ...rest } = Stepperize.defineStepper<Steps>(steps as never)
+
+  const allSteps = rest.steps
+  const getStepIndex = (id: Stepperize.Get.Id<Steps>) => allSteps.findIndex((step) => step.id === id)
 
   const StepperContainer = ({
     children,
@@ -89,15 +95,13 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
         tracking = false,
         children,
         className,
-        ...props
+        ...options
       }) => {
         return (
           <StepperContext.Provider value={{ variant, labelOrientation, tracking }}>
-            <Scoped initialStep={props.initialStep} initialMetadata={props.initialMetadata}>
-              <StepperContainer className={className} {...props}>
-                {children}
-              </StepperContainer>
-            </Scoped>
+            <Provider {...options}>
+              <StepperContainer className={className}>{children}</StepperContainer>
+            </Provider>
           </StepperContext.Provider>
         )
       },
@@ -115,14 +119,13 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
         const { variant, labelOrientation } = useStepperProvider()
         const { current } = useStepper()
 
-        const utils = rest.utils
-        const steps = rest.steps
+        const steps = allSteps
 
-        const stepIndex = utils.getIndex(props.of)
+        const stepIndex = getStepIndex(props.of)
         const step = steps[stepIndex]
-        const currentIndex = utils.getIndex(current.id)
+        const currentIndex = getStepIndex(current.id)
 
-        const isLast = utils.getLast().id === props.of
+        const isLast = steps[steps.length - 1]?.id === props.of
         const isActive = current.id === props.of
 
         const dataState = getStepState(currentIndex, stepIndex)
@@ -177,7 +180,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
                 aria-posinset={stepIndex + 1}
                 aria-setsize={steps.length}
                 aria-selected={isActive}
-                onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
+                onKeyDown={(e) => onStepKeyDown(e, steps[stepIndex + 1], steps[stepIndex - 1])}
                 {...props}
               >
                 {icon ?? stepIndex + 1}
@@ -408,8 +411,8 @@ const extractChildren = (children: React.ReactNode) => {
 
 const onStepKeyDown = (
   e: React.KeyboardEvent<HTMLButtonElement>,
-  nextStep: Stepperize.Step,
-  prevStep: Stepperize.Step,
+  nextStep: Stepperize.Step | undefined,
+  prevStep: Stepperize.Step | undefined,
 ) => {
   const { key } = e
   const directions = {

@@ -76,7 +76,7 @@ const DEFAULT_MCP_SERVERS: McpServer[] = [
   { name: "BioContextAI Knowledgebase MCP", url: "https://biocontext-kb.fastmcp.app/mcp" },
 ]
 
-const DEFAULT_MODEL = "gemini-3-flash-preview"
+const DEFAULT_MODEL = "gemini-3.5-flash"
 
 // Helper to format date for default conversation title
 const formatDateForTitle = (date: Date): string => {
