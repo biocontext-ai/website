@@ -8,6 +8,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preinstall": "npm add -D prisma; npm add @prisma/client",
+    "postinstall": "npx prisma generate --no-hints",
     "lint": "prettier --config .prettierrc.json --check . && eslint .",
     "prepare": "husky",
     "build:test": "dotenv -e .env.test -- next build",
