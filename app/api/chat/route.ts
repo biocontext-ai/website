@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { logChatMessage } from "@/lib/chat"
+import { DEFAULT_CHAT_MODEL, FREE_TIER_GOOGLE_MODELS } from "@/lib/chat-models"
 import { chatTools } from "@/lib/chat-tools"
 import { logger } from "@/lib/monitoring"
 import { prisma } from "@/lib/prisma"
@@ -7,13 +8,20 @@ import { logSecurityEventFromRequest, SecurityEventType } from "@/lib/security-e
 import { validateMcpServerUrl } from "@/lib/url-validation"
 import { isChatRequest } from "@/types/api"
 import { createAnthropic } from "@ai-sdk/anthropic"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createGoogle } from "@ai-sdk/google"
 import { createGroq } from "@ai-sdk/groq"
-import { experimental_createMCPClient } from "@ai-sdk/mcp"
+import { createMCPClient } from "@ai-sdk/mcp"
 import { createOpenAI } from "@ai-sdk/openai"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { convertToModelMessages, stepCountIs, streamText } from "ai"
-import { after, NextRequest, NextResponse } from "next/server"
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  isStepCount,
+  streamText,
+  toUIMessageStream,
+} from "ai"
+import { after, NextRequest } from "next/server"
 import { ReactNode } from "react"
 
 export interface Message {
@@ -90,18 +98,14 @@ const checkRateLimit = async (userId: string): Promise<{ allowed: boolean; remai
   return { allowed: true, remaining: FREE_TIER_REQUEST_LIMIT - (rateLimit.requestCount + 1), resetTime }
 }
 
-const chatErrorResponse = (message: string) => {
-  const schemaErrorStream = new ReadableStream({
-    start(controller) {
-      const formattedError = `0:"${message}"\ne:{"finishReason":"stop","usage":{"promptTokens":null,"completionTokens":null},"isContinued":false}\nd:{"finishReason":"stop","usage":{"promptTokens":null,"completionTokens":null}}`
-      formattedError.split("\n").forEach((line) => {
-        controller.enqueue(line + "\n")
-      })
-      controller.close()
-    },
+const chatErrorResponse = (message: string): Response =>
+  createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: ({ writer }) => {
+        writer.write({ type: "error", errorText: message })
+      },
+    }),
   })
-  return new NextResponse(schemaErrorStream, { headers: { "Content-Type": "text/plain" } })
-}
 
 const getSystemPrompt = (includeMCP: boolean): string => {
   let systemPrompt = `<core_identity>
@@ -169,6 +173,12 @@ Maintain technical precision concisely. Clearly distinguish between established 
 </scientific_communication>`
 
   return systemPrompt.replaceAll("\n", "").replaceAll(/  +/g, " ")
+}
+
+const getReasoningLevel = (modelName: string, requestedModel?: string): "none" | "low" | "provider-default" => {
+  if (requestedModel?.startsWith("groq-")) return "provider-default"
+  if (requestedModel?.startsWith("gpt-") && modelName !== "gpt-6-luna") return "low"
+  return "none"
 }
 
 export async function POST(req: NextRequest) {
@@ -253,14 +263,10 @@ export async function POST(req: NextRequest) {
     } else {
       // Default to Gemini or use specified Gemini model
       // Use user's API key if provided, otherwise use community key
-      provider = createGoogleGenerativeAI({
+      provider = createGoogle({
         apiKey: (key || process.env.GEMINI_API_KEY) as string,
       })
-      modelName = model || "gemini-3.5-flash"
-      // Validate and default to supported model if needed
-      if (modelName && ["gemini-3.5-flash", "gemini-3.1-flash-lite"].indexOf(modelName) === -1) {
-        modelName = "gemini-3.5-flash"
-      }
+      modelName = model && FREE_TIER_GOOGLE_MODELS.includes(model) ? model : DEFAULT_CHAT_MODEL
     }
 
     // Use custom servers if provided, otherwise use defaults
@@ -305,7 +311,7 @@ export async function POST(req: NextRequest) {
         const operationTimeout = 10000 // 10 seconds
 
         const client = (await Promise.race([
-          experimental_createMCPClient({
+          createMCPClient({
             name: server.name,
             transport: new StreamableHTTPClientTransport(new URL(server.url)),
           }),
@@ -343,20 +349,21 @@ export async function POST(req: NextRequest) {
     try {
       chatbotResult = streamText({
         model: provider(modelName),
-        system: getSystemPrompt(Object.keys(tools).length > 0),
+        instructions: getSystemPrompt(Object.keys(tools).length > 0),
         seed: 3407,
         maxOutputTokens: 10000,
-        temperature: modelName.startsWith("gpt-5") ? 1 : 0.2,
+        temperature: model?.startsWith("gpt-") || model?.startsWith("claude-") ? undefined : 0.2,
+        reasoning: getReasoningLevel(modelName, model),
         messages: await convertToModelMessages(messages),
         tools: {
           ...chatTools,
           ...tools,
         },
-        stopWhen: stepCountIs(15),
-        onFinish: async ({ steps, totalUsage }) => {
+        stopWhen: isStepCount(15),
+        onEnd: async ({ steps, usage }) => {
           // Log chat message asynchronously after response
           after(async () => {
-            await logChatMessage(session.user.id, steps, totalUsage, toolToServerUrl, modelName)
+            await logChatMessage(session.user.id, steps, usage, toolToServerUrl, modelName)
           })
 
           // Close all MCP clients
@@ -378,20 +385,6 @@ export async function POST(req: NextRequest) {
               console.error("Error closing MCP client:", clientError)
             }
           }
-        },
-        providerOptions: {
-          openai: {
-            reasoningEffort: "minimal",
-          },
-          google: {
-            thinkingConfig: {
-              thinkingBudget: 0,
-              includeThoughts: false,
-            },
-          },
-          anthropic: {
-            thinking: { type: "disabled", budgetTokens: 0 },
-          },
         },
       })
     } catch (error: any) {
@@ -424,7 +417,7 @@ export async function POST(req: NextRequest) {
           errorMessage = "API rate limit exceeded. Please try again later."
         } else if (error.message.includes("model") && error.message.includes("not found")) {
           errorMessage = "The specified model is not available. Please try a different model."
-        } else if (error.message.lower().includes("rate limit")) {
+        } else if (error.message.toLowerCase().includes("rate limit")) {
           errorMessage = "The model's rate limit has been exceeded. Please try again later."
         } else {
           // For other API errors, provide a more specific message while keeping it user-friendly
@@ -435,7 +428,8 @@ export async function POST(req: NextRequest) {
       return chatErrorResponse(errorMessage)
     }
 
-    return chatbotResult.toUIMessageStreamResponse({
+    const uiMessageStream = toUIMessageStream({
+      stream: chatbotResult.stream,
       sendReasoning: true,
       onError: (error: any) => {
         console.error("Stream response error:", error)
@@ -460,6 +454,8 @@ export async function POST(req: NextRequest) {
         return "Your message could not be processed. Please try again."
       },
     })
+
+    return createUIMessageStreamResponse({ stream: uiMessageStream })
   })()
 
   try {

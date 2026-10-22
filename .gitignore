@@ -28,3 +28,6 @@ test-results
 .wrangler
 .open-next
 .dev.vars
+.claude
+.agents
+skills-lock.json

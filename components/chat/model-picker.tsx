@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { CHAT_MODELS, ChatModel, ChatModelProvider, DEFAULT_CHAT_MODEL } from "@/lib/chat-models"
 import { useChatStore } from "@/stores/chat"
 import { UIMessage } from "ai"
 import { AlertTriangle, Key, X, Zap } from "lucide-react"
@@ -34,111 +35,18 @@ import Claude from "../icons/claude"
 import Gemini from "../icons/gemini"
 import OpenAI from "../icons/openai"
 
-interface ModelOption {
-  id: string
-  name: string
-  provider: "google" | "openai" | "anthropic" | "groq"
-  requiresApiKey: boolean
-  supportsOptionalApiKey?: boolean
-  description?: string
-  badge?: string
-  icon?: React.ReactNode
+interface ModelOption extends ChatModel {
+  icon: React.ReactNode
 }
 
-const models: ModelOption[] = [
-  {
-    id: "gemini-3.5-flash",
-    name: "Gemini 3.5 Flash",
-    provider: "google",
-    requiresApiKey: false,
-    supportsOptionalApiKey: true,
-    description:
-      "Free with community key, or use your own API key for higher limits. Chats used by the provider to improve their products.",
-    badge: "Free",
-    icon: <Gemini className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "claude-haiku-4-5",
-    name: "Claude Haiku 4.5",
-    provider: "anthropic",
-    requiresApiKey: true,
-    description: "Lower cost Anthropic model",
-    badge: "API Key Required",
-    icon: <Claude className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "claude-sonnet-4-6",
-    name: "Claude Sonnet 4.6",
-    provider: "anthropic",
-    requiresApiKey: true,
-    description: "Performant Anthropic model",
-    badge: "API Key Required",
-    icon: <Claude className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "claude-opus-4-8",
-    name: "Claude Opus 4.8",
-    provider: "anthropic",
-    requiresApiKey: true,
-    description: "Largest Anthropic model",
-    badge: "API Key Required",
-    icon: <Claude className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-4.1-mini-2025-04-14",
-    name: "GPT-4.1 Mini",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Cost-effective OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-4.1-2025-04-14",
-    name: "GPT-4.1",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Capable OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-5-mini",
-    name: "GPT-5 Mini",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "New and cost-optimized OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "gpt-5",
-    name: "GPT-5",
-    provider: "openai",
-    requiresApiKey: true,
-    description: "Newest & most capable OpenAI model",
-    badge: "API Key Required",
-    icon: <OpenAI className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "groq-openai/gpt-oss-20b",
-    name: "GPT OSS 20B (Groq)",
-    provider: "groq",
-    requiresApiKey: true,
-    description: "Fast inference with Groq",
-    badge: "API Key Required",
-    icon: <Zap className="h-4 w-4 mr-2" />,
-  },
-  {
-    id: "groq-openai/gpt-oss-120b",
-    name: "GPT OSS 120B (Groq)",
-    provider: "groq",
-    requiresApiKey: true,
-    description: "Fast inference with Groq",
-    badge: "API Key Required",
-    icon: <Zap className="h-4 w-4 mr-2" />,
-  },
-]
+const providerIcons: Record<ChatModelProvider, React.ReactNode> = {
+  google: <Gemini className="h-4 w-4 mr-2" />,
+  anthropic: <Claude className="h-4 w-4 mr-2" />,
+  openai: <OpenAI className="h-4 w-4 mr-2" />,
+  groq: <Zap className="h-4 w-4 mr-2" />,
+}
+
+const models: ModelOption[] = CHAT_MODELS.map((model) => ({ ...model, icon: providerIcons[model.provider] }))
 
 type ModelPickerProps = {
   setMessages: (messages: UIMessage[]) => void
@@ -160,7 +68,7 @@ export default function ModelPicker({ setMessages }: ModelPickerProps) {
   const [pendingModel, setPendingModel] = useState<string>("")
 
   // Get the default free model to switch to
-  const defaultFreeModel = models.find((m) => m.id === "gemini-3.5-flash")!
+  const defaultFreeModel = models.find((m) => m.id === DEFAULT_CHAT_MODEL)!
 
   const currentModel = models.find((m) => m.id === selectedModel)
 

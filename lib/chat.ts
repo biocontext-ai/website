@@ -1,16 +1,10 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
+import type { LanguageModelUsage } from "ai"
 
 interface ToolCallInfo {
   toolName: string
-}
-
-interface UsageInfo {
-  inputTokens?: number
-  totalTokens?: number
-  reasoningTokens?: number
-  cachedInputTokens?: number
 }
 
 /**
@@ -99,7 +93,7 @@ async function matchToolCallsToServerIds(
 export async function logChatMessage(
   userId: string | undefined,
   steps: any[],
-  totalUsage: UsageInfo,
+  usage: LanguageModelUsage,
   toolToServerUrl: Map<string, string>,
   modelName?: string,
 ): Promise<void> {
@@ -111,10 +105,10 @@ export async function logChatMessage(
       data: {
         userId: userId || null,
         modelName: modelName || null,
-        inputTokens: totalUsage.inputTokens || 0,
-        totalTokens: totalUsage.totalTokens || 0,
-        reasoningTokens: totalUsage.reasoningTokens || 0,
-        cachedInputTokens: totalUsage.cachedInputTokens || 0,
+        inputTokens: usage.inputTokens || 0,
+        totalTokens: usage.totalTokens || 0,
+        reasoningTokens: usage.outputTokenDetails?.reasoningTokens || 0,
+        cachedInputTokens: usage.inputTokenDetails?.cacheReadTokens || 0,
       },
     })
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { DEFAULT_CHAT_MODEL, isSupportedChatModel } from "@/lib/chat-models"
 import type { UIMessage } from "ai"
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
@@ -76,7 +77,7 @@ const DEFAULT_MCP_SERVERS: McpServer[] = [
   { name: "BioContextAI Knowledgebase MCP", url: "https://biocontext-kb.fastmcp.app/mcp" },
 ]
 
-const DEFAULT_MODEL = "gemini-3.5-flash"
+const DEFAULT_MODEL = DEFAULT_CHAT_MODEL
 
 // Helper to format date for default conversation title
 const formatDateForTitle = (date: Date): string => {
@@ -106,6 +107,109 @@ const initialState: ChatSettings = {
   groqApiKey: null,
   conversations: [createNewConversation()],
   currentConversationId: null,
+}
+
+const migrateLegacyState = (persistedState: any, version: number): unknown => {
+  // Migrate from version 1 to version 2
+  if (version === 1) {
+    const oldState = persistedState as {
+      mcpServers: McpServer[]
+      selectedModel: string
+      apiKey: string | null
+      messages: UIMessage[]
+    }
+
+    // Create a new conversation from the old messages
+    const newConversation = createNewConversation()
+    if (oldState.messages && oldState.messages.length > 0) {
+      newConversation.messages = oldState.messages
+    }
+
+    return {
+      mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+      selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+      googleApiKey: null,
+      openaiApiKey: null,
+      anthropicApiKey: null,
+      conversations: [newConversation],
+      currentConversationId: newConversation.id,
+    }
+  }
+
+  // Migrate from version 2 to version 3
+  if (version === 2) {
+    const oldState = persistedState as {
+      mcpServers: McpServer[]
+      selectedModel: string
+      apiKey: string | null
+      conversations: Conversation[]
+      currentConversationId: string | null
+    }
+
+    // Simplified migration: just drop old API keys
+    return {
+      mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+      selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+      googleApiKey: null,
+      openaiApiKey: null,
+      anthropicApiKey: null,
+      conversations: oldState.conversations || [createNewConversation()],
+      currentConversationId: oldState.currentConversationId || null,
+    }
+  }
+
+  // Migrate from version 3 to version 4
+  if (version === 3) {
+    const oldState = persistedState as {
+      mcpServers: McpServer[]
+      selectedModel: string
+      googleApiKey: string | null
+      openaiApiKey: string | null
+      anthropicApiKey: string | null
+      useGoogleCommunityKey: boolean
+      conversations: Conversation[]
+      currentConversationId: string | null
+    }
+
+    // Remove useGoogleCommunityKey flag - presence of googleApiKey determines usage
+    return {
+      mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+      selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+      googleApiKey: oldState.googleApiKey || null,
+      openaiApiKey: oldState.openaiApiKey || null,
+      anthropicApiKey: oldState.anthropicApiKey || null,
+      groqApiKey: null,
+      conversations: oldState.conversations || [createNewConversation()],
+      currentConversationId: oldState.currentConversationId || null,
+    }
+  }
+
+  // Migrate from version 4 to version 5
+  if (version === 4) {
+    const oldState = persistedState as {
+      mcpServers: McpServer[]
+      selectedModel: string
+      googleApiKey: string | null
+      openaiApiKey: string | null
+      anthropicApiKey: string | null
+      conversations: Conversation[]
+      currentConversationId: string | null
+    }
+
+    // Add groqApiKey field
+    return {
+      mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
+      selectedModel: oldState.selectedModel || DEFAULT_MODEL,
+      googleApiKey: oldState.googleApiKey || null,
+      openaiApiKey: oldState.openaiApiKey || null,
+      anthropicApiKey: oldState.anthropicApiKey || null,
+      groqApiKey: null,
+      conversations: oldState.conversations || [createNewConversation()],
+      currentConversationId: oldState.currentConversationId || null,
+    }
+  }
+
+  return persistedState
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -335,122 +439,19 @@ export const useChatStore = create<ChatStore>()(
         conversations: state.conversations,
         currentConversationId: state.currentConversationId,
       }),
-      version: 6,
+      version: 7,
       migrate: (persistedState: any, version: number) => {
-        // Migrate from version 1 to version 2
-        if (version === 1) {
-          const oldState = persistedState as {
-            mcpServers: McpServer[]
-            selectedModel: string
-            apiKey: string | null
-            messages: UIMessage[]
-          }
-
-          // Create a new conversation from the old messages
-          const newConversation = createNewConversation()
-          if (oldState.messages && oldState.messages.length > 0) {
-            newConversation.messages = oldState.messages
-          }
-
-          return {
-            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
-            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
-            googleApiKey: null,
-            openaiApiKey: null,
-            anthropicApiKey: null,
-            conversations: [newConversation],
-            currentConversationId: newConversation.id,
-          }
+        const migratedState = migrateLegacyState(persistedState, version) as ChatSettings
+        return {
+          ...migratedState,
+          mcpServers: migratedState.mcpServers.map((server) => ({
+            ...server,
+            url: server.url === "https://mcp.biocontext.ai/mcp" ? "https://biocontext-kb.fastmcp.app/mcp" : server.url,
+          })),
+          selectedModel: isSupportedChatModel(migratedState.selectedModel)
+            ? migratedState.selectedModel
+            : DEFAULT_MODEL,
         }
-
-        // Migrate from version 2 to version 3
-        if (version === 2) {
-          const oldState = persistedState as {
-            mcpServers: McpServer[]
-            selectedModel: string
-            apiKey: string | null
-            conversations: Conversation[]
-            currentConversationId: string | null
-          }
-
-          // Simplified migration: just drop old API keys
-          return {
-            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
-            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
-            googleApiKey: null,
-            openaiApiKey: null,
-            anthropicApiKey: null,
-            conversations: oldState.conversations || [createNewConversation()],
-            currentConversationId: oldState.currentConversationId || null,
-          }
-        }
-
-        // Migrate from version 3 to version 4
-        if (version === 3) {
-          const oldState = persistedState as {
-            mcpServers: McpServer[]
-            selectedModel: string
-            googleApiKey: string | null
-            openaiApiKey: string | null
-            anthropicApiKey: string | null
-            useGoogleCommunityKey: boolean
-            conversations: Conversation[]
-            currentConversationId: string | null
-          }
-
-          // Remove useGoogleCommunityKey flag - presence of googleApiKey determines usage
-          return {
-            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
-            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
-            googleApiKey: oldState.googleApiKey || null,
-            openaiApiKey: oldState.openaiApiKey || null,
-            anthropicApiKey: oldState.anthropicApiKey || null,
-            groqApiKey: null,
-            conversations: oldState.conversations || [createNewConversation()],
-            currentConversationId: oldState.currentConversationId || null,
-          }
-        }
-
-        // Migrate from version 4 to version 5
-        if (version === 4) {
-          const oldState = persistedState as {
-            mcpServers: McpServer[]
-            selectedModel: string
-            googleApiKey: string | null
-            openaiApiKey: string | null
-            anthropicApiKey: string | null
-            conversations: Conversation[]
-            currentConversationId: string | null
-          }
-
-          // Add groqApiKey field
-          return {
-            mcpServers: oldState.mcpServers || DEFAULT_MCP_SERVERS,
-            selectedModel: oldState.selectedModel || DEFAULT_MODEL,
-            googleApiKey: oldState.googleApiKey || null,
-            openaiApiKey: oldState.openaiApiKey || null,
-            anthropicApiKey: oldState.anthropicApiKey || null,
-            groqApiKey: null,
-            conversations: oldState.conversations || [createNewConversation()],
-            currentConversationId: oldState.currentConversationId || null,
-          }
-        }
-
-        // Migrate from version 5 to version 6
-        if (version === 5) {
-          const oldState = persistedState as ChatSettings
-
-          return {
-            ...oldState,
-            mcpServers: oldState.mcpServers.map((server) => ({
-              ...server,
-              url:
-                server.url === "https://mcp.biocontext.ai/mcp" ? "https://biocontext-kb.fastmcp.app/mcp" : server.url,
-            })),
-          }
-        }
-
-        return persistedState
       },
     },
   ),
